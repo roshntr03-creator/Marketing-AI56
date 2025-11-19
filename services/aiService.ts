@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { GoogleGenAI, Type, Modality, LiveServerMessage } from "@google/genai";
 import { BrandProfile, CampaignBlueprint, CompetitorAnalysisReport, EnhancedPrompt, SocialPost, CoachMessage } from '../types';
 
 const KIE_API_KEY = '8774ae5d8c69b9009c49a774e9b12555';
@@ -437,6 +437,26 @@ const aiService = {
         sender: 'coach',
         text: response.text || "I'm sorry, I couldn't generate a response."
     };
+  },
+
+  connectToCoachLive: async (callbacks: { 
+    onopen?: () => void; 
+    onmessage?: (message: LiveServerMessage) => void; 
+    onclose?: (e: CloseEvent) => void; 
+    onerror?: (e: ErrorEvent) => void; 
+  }) => {
+      const ai = createAI();
+      return ai.live.connect({
+          model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+          config: {
+              responseModalities: [Modality.AUDIO],
+              speechConfig: {
+                  voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
+              },
+              systemInstruction: "You are a friendly, energetic marketing expert. Keep responses concise, helpful, and encouraging.",
+          },
+          callbacks
+      });
   }
 };
 
