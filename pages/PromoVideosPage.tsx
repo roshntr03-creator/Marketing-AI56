@@ -62,7 +62,7 @@ const PromoVideosPage: React.FC = () => {
     useEffect(() => {
         if (isGenerating) {
             setProgress(0);
-            setLoadingStage('Initializing Neural Network...');
+            setLoadingStage('Initializing');
             
             const interval = setInterval(() => {
                 setProgress(prev => {
@@ -70,10 +70,10 @@ const PromoVideosPage: React.FC = () => {
                     const increment = Math.max(0.2, (95 - prev) / 40); 
                     const newProg = prev + Math.random() * increment;
                     
-                    if (newProg > 15 && newProg < 35) setLoadingStage('Parsing Scene Geometry...');
-                    if (newProg > 35 && newProg < 60) setLoadingStage('Synthesizing Textures...');
-                    if (newProg > 60 && newProg < 80) setLoadingStage('Rendering Lighting Effects...');
-                    if (newProg > 80) setLoadingStage('Finalizing Video Stream...');
+                    if (newProg > 10 && newProg < 30) setLoadingStage('Analysis');
+                    if (newProg > 30 && newProg < 60) setLoadingStage('Synthesis');
+                    if (newProg > 60 && newProg < 80) setLoadingStage('Rendering');
+                    if (newProg > 80) setLoadingStage('Finalizing');
                     
                     return newProg >= 95 ? 95 : newProg;
                 });
@@ -218,7 +218,7 @@ const PromoVideosPage: React.FC = () => {
             <div className="w-full lg:w-8/12 h-full flex flex-col animate-fade-in">
                 <div className="flex-1 bg-[#050505] rounded-2xl border border-white/10 relative overflow-hidden flex flex-col shadow-2xl">
                     {/* Header */}
-                    <div className="h-14 border-b border-white/5 bg-zinc-900/50 flex items-center px-6 justify-between backdrop-blur-md z-20">
+                    <div className="h-14 border-b border-white/5 bg-zinc-900/50 flex items-center px-6 justify-between backdrop-blur-md z-20 flex-shrink-0">
                          <div className="flex items-center gap-2">
                              <div className="flex gap-1.5 mr-4">
                                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700"></div>
@@ -237,68 +237,89 @@ const PromoVideosPage: React.FC = () => {
                          )}
                     </div>
 
-                    {/* Canvas */}
-                    <div className="flex-1 relative flex items-center justify-center p-8 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-zinc-950/90">
-                         {/* Background Glow for activity */}
+                    {/* Canvas Stage */}
+                    <div className="flex-1 relative flex items-center justify-center p-4 lg:p-8 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-zinc-950/90 overflow-hidden">
+                         {/* Grid Background */}
+                         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
+
+                         {/* Background Pulse during generation */}
                          {isGenerating && (
-                             <div className="absolute inset-0 bg-indigo-900/10 animate-pulse duration-[3s]"></div>
+                             <div className="absolute inset-0 bg-indigo-900/5 animate-pulse duration-[3s]"></div>
                          )}
 
+                         {/* Video Container - Strictly constrained dimensions to prevent overflow */}
                          <div 
-                            className={`relative shadow-2xl transition-all duration-700 ease-in-out bg-black ring-1 ring-white/10 overflow-hidden ${
+                            className={`relative shadow-2xl transition-all duration-500 ease-in-out bg-black ring-1 ring-white/10 overflow-hidden mx-auto flex items-center justify-center ${
                                 aspectRatio === '16:9' ? 'w-full aspect-video max-w-4xl' : 
-                                aspectRatio === '9:16' ? 'h-full aspect-[9/16] max-h-full' : 
-                                'h-full aspect-square max-h-full'
+                                aspectRatio === '9:16' ? 'h-full aspect-[9/16] max-h-[600px]' : 
+                                'h-full aspect-square max-h-[600px]'
                             }`}
                          >
                              {isGenerating ? (
-                                 /* Enhanced Loading State */
-                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md z-50">
-                                     <div className="w-2/3 max-w-xs space-y-6">
-                                        {/* Loading Icon */}
-                                        <div className="relative mx-auto w-24 h-24">
-                                            <div className="absolute inset-0 border-4 border-zinc-800 rounded-full"></div>
-                                            <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <CpuChipIcon className="w-8 h-8 text-indigo-400 animate-pulse" />
+                                 /* Enhanced Visibility Loading State */
+                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-50">
+                                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+                                     <div className="relative z-10 w-64 space-y-8">
+                                        
+                                        {/* Header */}
+                                        <div className="text-center">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold tracking-wider mb-2 animate-pulse">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                                GENERATING PREVIEW
                                             </div>
                                         </div>
 
-                                        {/* Text Details */}
-                                        <div className="text-center space-y-1">
-                                            <p className="text-white font-medium text-sm tracking-wide animate-pulse">{loadingStage}</p>
-                                            <p className="text-zinc-500 text-xs font-mono">Sora 2 Model • {duration} • {style}</p>
+                                        {/* Central Pressure Gauge */}
+                                        <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
+                                            {/* Outer Ring */}
+                                            <svg className="w-full h-full transform -rotate-90">
+                                                <circle cx="64" cy="64" r="60" stroke="#27272a" strokeWidth="4" fill="none" />
+                                                <circle 
+                                                    cx="64" cy="64" r="60" 
+                                                    stroke="#6366f1" 
+                                                    strokeWidth="4" 
+                                                    fill="none" 
+                                                    strokeDasharray="377" 
+                                                    strokeDashoffset={377 - (377 * progress) / 100} 
+                                                    className="transition-all duration-300 ease-linear"
+                                                />
+                                            </svg>
+                                            
+                                            {/* Inner Content */}
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span className="text-3xl font-bold text-white font-display tracking-tighter">{Math.round(progress)}%</span>
+                                                <span className="text-[10px] text-zinc-500 font-mono mt-1 uppercase">Pressure</span>
+                                            </div>
+
+                                            {/* Glowing effect behind */}
+                                            <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full -z-10 opacity-50 animate-pulse"></div>
                                         </div>
 
-                                        {/* Progress Bar */}
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
-                                                <span>Progress</span>
-                                                <span>{Math.round(progress)}%</span>
+                                        {/* Progress Bars / Stages */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                                                <span>Stage: {loadingStage}</span>
                                             </div>
-                                            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden w-full">
-                                                <div 
-                                                    className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all duration-300 ease-out" 
-                                                    style={{ width: `${progress}%` }}
-                                                ></div>
+                                            {/* Segmented Bar */}
+                                            <div className="flex gap-1 h-1.5 w-full">
+                                                {[0, 25, 50, 75].map((threshold, idx) => (
+                                                    <div 
+                                                        key={idx} 
+                                                        className={`flex-1 rounded-full transition-colors duration-500 ${
+                                                            progress > threshold ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'bg-zinc-800'
+                                                        }`}
+                                                    ></div>
+                                                ))}
                                             </div>
+                                            <p className="text-center text-[10px] text-zinc-600 pt-2">Optimizing Tensor Cores • Sora 2</p>
                                         </div>
-                                     </div>
-                                     
-                                     {/* Mock Terminal Output */}
-                                     <div className="absolute bottom-4 left-4 right-4 h-20 bg-black/50 rounded border border-white/5 p-3 font-mono text-[9px] text-zinc-500 overflow-hidden hidden sm:block">
-                                         <p className="text-zinc-400">> Request initialized: {currentJobId}</p>
-                                         <p style={{opacity: progress > 10 ? 1 : 0}}>> Analyzing prompt tokens...</p>
-                                         <p style={{opacity: progress > 30 ? 1 : 0}}>> Generating latent space vectors...</p>
-                                         <p style={{opacity: progress > 60 ? 1 : 0}}>> Upscaling to high definition...</p>
-                                         <p className="animate-pulse text-indigo-500 mt-1">_</p>
                                      </div>
                                  </div>
                              ) : generatedVideoUrl ? (
                                  /* Video Player */
                                  <video 
                                     src={generatedVideoUrl} 
-                                    className="w-full h-full object-cover" 
+                                    className="w-full h-full object-contain bg-black" 
                                     controls 
                                     autoPlay 
                                     loop
@@ -328,7 +349,7 @@ const PromoVideosPage: React.FC = () => {
                     </div>
 
                     {/* Footer Timeline Placeholder */}
-                    <div className="h-16 bg-zinc-900 border-t border-white/5 px-6 flex items-center gap-4">
+                    <div className="h-16 bg-zinc-900 border-t border-white/5 px-6 flex items-center gap-4 flex-shrink-0">
                         <button className="text-zinc-500 hover:text-white transition-colors" disabled={!generatedVideoUrl}>
                              <PlayIcon className="w-5 h-5" />
                         </button>
