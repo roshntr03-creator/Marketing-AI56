@@ -8,7 +8,7 @@ export interface BrandProfile {
   keywords: string[];
 }
 
-export type CreationJobType = 'UGC_VIDEO' | 'PROMO_VIDEO' | 'IMAGE' | 'CONTENT';
+export type CreationJobType = 'UGC_VIDEO' | 'PROMO_VIDEO' | 'IMAGE' | 'CONTENT' | 'COMPETITOR_ANALYSIS';
 export type CreationJobStatus = 'Pending' | 'Generating' | 'Completed' | 'Failed';
 
 export interface CreationJob {

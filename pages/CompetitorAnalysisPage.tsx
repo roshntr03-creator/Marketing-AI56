@@ -1,143 +1,373 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { MagnifyingGlassIcon, GlobeAltIcon, BoltIcon, ShieldExclamationIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import { 
+    MagnifyingGlassIcon, 
+    GlobeAltIcon, 
+    BoltIcon, 
+    ShieldExclamationIcon, 
+    TrophyIcon,
+    ChartBarIcon,
+    ClockIcon,
+    ArrowRightIcon,
+    CheckCircleIcon,
+    SignalIcon,
+    UserGroupIcon,
+    MegaphoneIcon
+} from '@heroicons/react/24/outline';
 import aiService from '../services/aiService';
-import { CompetitorAnalysisReport } from '../types';
+import { useAppContext } from '../contexts/AppContext';
+import { CompetitorAnalysisReport, CreationJob } from '../types';
 
 const CompetitorAnalysisPage: React.FC = () => {
+    const { addCreation, creations } = useAppContext();
+
+    // State
     const [url, setUrl] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [report, setReport] = useState<CompetitorAnalysisReport | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [activeJobId, setActiveJobId] = useState<string | null>(null);
+    
+    // Animation State
+    const [progress, setProgress] = useState(0);
+    const [scanStage, setScanStage] = useState('Initializing');
+
+    // Derived Data
+    const pastReports = creations.filter(c => c.type === 'COMPETITOR_ANALYSIS');
+    const currentJob = creations.find(c => c.id === activeJobId);
+    
+    // Parse report from job result if available
+    const activeReport: CompetitorAnalysisReport | null = currentJob?.resultText 
+        ? JSON.parse(currentJob.resultText) 
+        : null;
+
+    // Calculate "Threat Score" (Mock Logic based on strengths/weaknesses count)
+    const calculateThreatScore = (report: CompetitorAnalysisReport) => {
+        const baseScore = 50;
+        const strengthScore = (report.contentStrengths?.length || 0) * 8;
+        const weaknessScore = (report.contentWeaknesses?.length || 0) * 5;
+        const score = baseScore + strengthScore - weaknessScore;
+        return Math.min(Math.max(score, 10), 95); // Clamp between 10 and 95
+    };
+
+    const threatScore = activeReport ? calculateThreatScore(activeReport) : 0;
+
+    // Simulate scanning progress
+    useEffect(() => {
+        if (isAnalyzing) {
+            setProgress(0);
+            setScanStage('Resolving DNS...');
+            
+            const interval = setInterval(() => {
+                setProgress(prev => {
+                    const increment = Math.random() * 5;
+                    const newProg = prev + increment;
+                    
+                    if (newProg > 10 && newProg < 30) setScanStage('Crawling Sitemap...');
+                    if (newProg > 30 && newProg < 50) setScanStage('Analyzing Brand Voice...');
+                    if (newProg > 50 && newProg < 70) setScanStage('Detecting Content Gaps...');
+                    if (newProg > 70 && newProg < 90) setScanStage('Formulating Strategy...');
+                    if (newProg >= 100) {
+                         setScanStage('Finalizing Report...');
+                         return 100;
+                    }
+                    return newProg;
+                });
+            }, 200);
+            
+            return () => clearInterval(interval);
+        }
+    }, [isAnalyzing]);
 
     const handleAnalyze = async () => {
         if (!url) return;
-        setIsLoading(true);
-        setReport(null);
+        setIsAnalyzing(true);
+        setActiveJobId(null); // Clear current view
+
         try {
-            const result = await aiService.analyzeCompetitor(url);
-            setReport(result);
+            // 1. API Call
+            const report = await aiService.analyzeCompetitor(url);
+            
+            // 2. Save to History
+            const newJobId = `comp-${Date.now()}`;
+            addCreation({
+                id: newJobId,
+                type: 'COMPETITOR_ANALYSIS',
+                title: `Audit: ${new URL(url).hostname}`,
+                params: { url },
+                status: 'Completed',
+                resultText: JSON.stringify(report)
+            });
+
+            // 3. Set View
+            setActiveJobId(newJobId);
+
         } catch (e) {
-            console.error(e);
+            console.error("Analysis failed", e);
+            // Handle error state here
         } finally {
-            setIsLoading(false);
+            setIsAnalyzing(false);
+            setProgress(100);
         }
     };
 
+    const loadReport = (job: CreationJob) => {
+        setActiveJobId(job.id);
+        setUrl(job.params.url || '');
+    };
+
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20">
-            <div>
-                <h1 className="text-3xl font-bold font-display text-white">Market Intelligence</h1>
-                <p className="text-zinc-400">Deep-dive competitive analysis.</p>
-            </div>
+        <div className="h-[calc(100vh-9rem)] flex flex-col lg:flex-row gap-6 animate-fade-in pb-2">
             
-            <Card className="p-3 flex flex-col sm:flex-row gap-3 bg-zinc-900 border border-white/10 rounded-xl">
-                <div className="relative flex-grow">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <GlobeAltIcon className="h-5 w-5 text-zinc-500" />
-                    </div>
-                    <input 
-                        className="w-full pl-12 pr-4 py-3 bg-zinc-950 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-white/5 transition-all"
-                        value={url}
-                        onChange={e => setUrl(e.target.value)}
-                        placeholder="Enter competitor URL (e.g. https://competitor.com)"
-                        type="url"
-                        onKeyDown={e => e.key === 'Enter' && handleAnalyze()}
-                    />
+            {/* LEFT PANEL: Controls & History */}
+            <div className="w-full lg:w-4/12 flex flex-col h-full bg-[#09090b] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+                {/* Header */}
+                <div className="px-6 py-5 border-b border-white/5 bg-zinc-900/50 backdrop-blur-sm">
+                    <h1 className="text-xl font-bold font-display text-white">Market Intel</h1>
+                    <p className="text-zinc-400 text-xs">Competitive Intelligence Scanner</p>
                 </div>
-                <Button onClick={handleAnalyze} isLoading={isLoading} disabled={!url} className="px-8 h-auto rounded-lg">
-                    Analyze
-                </Button>
-            </Card>
 
-            {report ? (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up">
-                    {/* Identity Column */}
-                    <div className="lg:col-span-1 space-y-6">
-                         <Card className="p-8 h-full bg-zinc-900 border-white/10">
-                            <h3 className="text-sm font-bold font-display text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
-                                <MagnifyingGlassIcon className="w-4 h-4 text-indigo-500" />
-                                Market Position
-                            </h3>
-                            <div className="space-y-8">
-                                <div>
-                                    <h4 className="text-xs text-zinc-500 uppercase tracking-wider mb-3 font-bold">Target Audience</h4>
-                                    <p className="text-sm text-zinc-300 leading-relaxed bg-white/5 p-4 rounded-lg border border-white/5">{report.targetAudience}</p>
-                                </div>
-                                <div>
-                                    <h4 className="text-xs text-zinc-500 uppercase tracking-wider mb-3 font-bold">Tone of Voice</h4>
-                                    <p className="text-sm text-zinc-300 leading-relaxed italic border-l-2 border-indigo-500/50 pl-4">"{report.toneOfVoice}"</p>
-                                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-zinc-900/20">
+                    
+                    {/* Input Section */}
+                    <div className="space-y-3">
+                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                            <GlobeAltIcon className="w-3 h-3"/> Target URL
+                        </label>
+                        <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl opacity-20 group-focus-within:opacity-100 transition duration-500 blur"></div>
+                            <div className="relative flex bg-zinc-950 rounded-xl border border-white/10 shadow-inner">
+                                <input 
+                                    className="flex-1 bg-transparent border-none text-sm text-white px-4 py-3 focus:ring-0 placeholder-zinc-600"
+                                    placeholder="https://competitor.com"
+                                    value={url}
+                                    onChange={e => setUrl(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleAnalyze()}
+                                />
+                                <button 
+                                    onClick={() => setUrl('')}
+                                    className={`px-3 text-zinc-500 hover:text-white transition-opacity ${url ? 'opacity-100' : 'opacity-0'}`}
+                                >
+                                    &times;
+                                </button>
                             </div>
-                         </Card>
+                        </div>
+                        <Button 
+                            onClick={handleAnalyze} 
+                            isLoading={isAnalyzing} 
+                            disabled={!url} 
+                            size="lg" 
+                            className="w-full shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300"
+                        >
+                            <MagnifyingGlassIcon className="w-5 h-5 mr-2" />
+                            Run Deep Scan
+                        </Button>
                     </div>
 
-                    {/* SWOT Grid */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card className="p-6 border-l-2 border-l-emerald-500 bg-zinc-900">
-                                <div className="flex items-center gap-2 mb-4 text-emerald-500">
-                                    <BoltIcon className="w-5 h-5" />
-                                    <h3 className="font-bold uppercase tracking-wide text-xs">Their Strengths</h3>
-                                </div>
-                                <ul className="space-y-3">
-                                    {report.contentStrengths.map((item, i) => (
-                                        <li key={i} className="flex items-start gap-3 text-sm text-zinc-400">
-                                            <span className="text-emerald-500 font-bold text-lg leading-none mt-[-2px]">•</span> 
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </Card>
-
-                            <Card className="p-6 border-l-2 border-l-red-500 bg-zinc-900">
-                                <div className="flex items-center gap-2 mb-4 text-red-500">
-                                    <ShieldExclamationIcon className="w-5 h-5" />
-                                    <h3 className="font-bold uppercase tracking-wide text-xs">Their Weaknesses</h3>
-                                </div>
-                                <ul className="space-y-3">
-                                    {report.contentWeaknesses.map((item, i) => (
-                                        <li key={i} className="flex items-start gap-3 text-sm text-zinc-400">
-                                            <span className="text-red-500 font-bold text-lg leading-none mt-[-2px]">•</span> 
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </Card>
-                        </div>
-
-                        <Card className="p-8 bg-gradient-to-br from-indigo-900/20 to-zinc-900 border border-indigo-500/20">
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-3 mb-6 text-white">
-                                    <div className="p-2 bg-indigo-500 rounded-lg">
-                                        <TrophyIcon className="w-5 h-5" />
+                    {/* History List */}
+                    <div className="space-y-3">
+                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                            <ClockIcon className="w-3 h-3"/> Recent Audits
+                        </label>
+                        <div className="space-y-2">
+                            {pastReports.map(job => (
+                                <button 
+                                    key={job.id}
+                                    onClick={() => loadReport(job)}
+                                    className={`w-full text-left p-3 rounded-lg border transition-all group flex items-center justify-between ${activeJobId === job.id ? 'bg-zinc-900 border-indigo-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'}`}
+                                >
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-zinc-400 font-bold text-xs uppercase border border-white/5">
+                                            {job.title.charAt(7)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-xs font-medium truncate ${activeJobId === job.id ? 'text-white' : 'text-zinc-300'}`}>
+                                                {job.params.url?.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]}
+                                            </p>
+                                            <p className="text-[10px] text-zinc-500">{new Date(job.createdAt).toLocaleDateString()}</p>
+                                        </div>
                                     </div>
-                                    <h3 className="font-medium font-display text-lg">Strategic Edge: How to Win</h3>
+                                    <ArrowRightIcon className={`w-3 h-3 text-zinc-600 group-hover:text-zinc-400 ${activeJobId === job.id ? 'text-indigo-400' : ''}`} />
+                                </button>
+                            ))}
+                            {pastReports.length === 0 && (
+                                <div className="p-6 text-center border border-dashed border-white/10 rounded-lg">
+                                    <p className="text-xs text-zinc-500">No audits recorded.</p>
                                 </div>
-                                 <ul className="space-y-4">
-                                    {report.howToCompete.map((item, i) => (
-                                        <li key={i} className="flex items-start gap-4 text-sm text-zinc-200 bg-white/5 p-4 rounded-lg border border-white/5">
-                                            <span className="text-indigo-400 font-mono text-xs font-bold flex-shrink-0 mt-0.5">0{i + 1}</span>
-                                            {item}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </Card>
+                            )}
+                        </div>
                     </div>
                 </div>
-            ) : (
-                !isLoading && (
-                     <div className="py-24 flex flex-col items-center justify-center text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
-                        <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-6">
-                            <MagnifyingGlassIcon className="w-8 h-8 text-zinc-600" />
+            </div>
+
+            {/* RIGHT PANEL: Analysis Report */}
+            <div className="w-full lg:w-8/12 h-full flex flex-col animate-fade-in">
+                <Card className="flex-1 flex flex-col p-0 overflow-hidden relative bg-[#050505] border-white/10 shadow-2xl">
+                    
+                    {/* Loading Overlay */}
+                    {isAnalyzing && (
+                        <div className="absolute inset-0 z-50 bg-[#050505] flex flex-col items-center justify-center">
+                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+                             
+                             <div className="w-80 space-y-6 relative z-10">
+                                 {/* Terminal Output */}
+                                 <div className="font-mono text-xs text-green-500 bg-black/50 p-4 rounded-lg border border-green-500/20 h-32 overflow-hidden flex flex-col justify-end shadow-lg">
+                                     <div className="opacity-50">Initializing protocols...</div>
+                                     <div className="opacity-70">Connecting to target: {url}...</div>
+                                     <div className="opacity-90">Status 200 OK.</div>
+                                     <div className="animate-pulse">> {scanStage}</div>
+                                 </div>
+
+                                 {/* Progress Bar */}
+                                 <div className="space-y-2">
+                                     <div className="flex justify-between text-[10px] uppercase tracking-widest text-zinc-500">
+                                         <span>System Processing</span>
+                                         <span>{Math.round(progress)}%</span>
+                                     </div>
+                                     <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
+                                         <div className="h-full bg-indigo-500 transition-all duration-200" style={{width: `${progress}%`}}></div>
+                                     </div>
+                                 </div>
+                             </div>
                         </div>
-                        <h3 className="text-lg font-medium text-white">Intelligence Awaiting</h3>
-                        <p className="text-zinc-500 max-w-md mt-2">Enter a competitor's URL to extract actionable insights.</p>
-                    </div>
-                )
-            )}
+                    )}
+
+                    {/* Empty State */}
+                    {!activeReport && !isAnalyzing && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700">
+                            <ChartBarIcon className="w-20 h-20 opacity-20 mb-6" />
+                            <h3 className="text-lg font-medium text-zinc-500">Awaiting Intelligence</h3>
+                            <p className="text-sm mt-2 max-w-xs text-center opacity-60">Enter a URL on the left to generate a comprehensive strategy audit.</p>
+                        </div>
+                    )}
+
+                    {/* Active Report View */}
+                    {activeReport && !isAnalyzing && (
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-10">
+                            
+                            {/* Top Header: Identity & Score */}
+                            <div className="flex flex-col md:flex-row gap-8 mb-10">
+                                <div className="flex-1">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium mb-4 uppercase tracking-wider">
+                                        <SignalIcon className="w-3 h-3 animate-pulse"/> Live Analysis
+                                    </div>
+                                    <h2 className="text-4xl font-bold text-white font-display mb-2 tracking-tight">
+                                        {currentJob?.params.url?.replace('https://', '').split('/')[0]}
+                                    </h2>
+                                    <p className="text-zinc-400 text-sm">Generated on {new Date(currentJob!.createdAt).toLocaleDateString()}</p>
+                                </div>
+                                
+                                {/* Threat Score Card */}
+                                <div className="bg-zinc-900 border border-white/10 rounded-2xl p-5 flex items-center gap-6 shadow-lg">
+                                    <div className="relative w-20 h-20 flex items-center justify-center">
+                                        <svg className="w-full h-full transform -rotate-90">
+                                            <circle cx="40" cy="40" r="36" stroke="#27272a" strokeWidth="6" fill="none" />
+                                            <circle 
+                                                cx="40" cy="40" r="36" 
+                                                stroke={threatScore > 70 ? '#ef4444' : threatScore > 40 ? '#f59e0b' : '#10b981'} 
+                                                strokeWidth="6" 
+                                                fill="none" 
+                                                strokeDasharray="226" 
+                                                strokeDashoffset={226 - (226 * threatScore) / 100} 
+                                                strokeLinecap="round"
+                                                className="drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]"
+                                            />
+                                        </svg>
+                                        <span className="absolute text-xl font-bold text-white">{Math.round(threatScore)}</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Market Threat</h3>
+                                        <p className={`text-lg font-bold ${threatScore > 70 ? 'text-red-400' : threatScore > 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                            {threatScore > 70 ? 'High' : threatScore > 40 ? 'Moderate' : 'Low'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Positioning Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div className="bg-white/5 border border-white/5 rounded-xl p-6">
+                                    <div className="flex items-center gap-2 text-indigo-400 mb-4">
+                                        <UserGroupIcon className="w-5 h-5" />
+                                        <h3 className="text-xs font-bold uppercase tracking-wider">Target Audience</h3>
+                                    </div>
+                                    <p className="text-zinc-200 text-sm leading-relaxed">{activeReport.targetAudience}</p>
+                                </div>
+                                <div className="bg-white/5 border border-white/5 rounded-xl p-6">
+                                    <div className="flex items-center gap-2 text-purple-400 mb-4">
+                                        <MegaphoneIcon className="w-5 h-5" />
+                                        <h3 className="text-xs font-bold uppercase tracking-wider">Tone of Voice</h3>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {activeReport.toneOfVoice.split(',').map((tone, i) => (
+                                            <span key={i} className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium">
+                                                {tone.trim()}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SWOT Section */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+                                        <BoltIcon className="w-4 h-4 text-emerald-500"/> Strengths
+                                    </h3>
+                                    <ul className="space-y-2">
+                                        {activeReport.contentStrengths.map((item, i) => (
+                                            <li key={i} className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-sm text-zinc-300">
+                                                <CheckCircleIcon className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+                                        <ShieldExclamationIcon className="w-4 h-4 text-red-500"/> Weaknesses
+                                    </h3>
+                                    <ul className="space-y-2">
+                                        {activeReport.contentWeaknesses.map((item, i) => (
+                                            <li key={i} className="flex items-start gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/10 text-sm text-zinc-300">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></span>
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Battle Plan */}
+                            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-indigo-500/20 rounded-2xl p-8 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                                
+                                <div className="flex items-center gap-3 mb-6 relative z-10">
+                                    <div className="p-2 bg-indigo-500 rounded-lg shadow-lg shadow-indigo-500/20">
+                                        <TrophyIcon className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white font-display">Strategic Counter-Measures</h3>
+                                        <p className="text-xs text-zinc-400">Actionable steps to outcompete this brand.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4 relative z-10">
+                                    {activeReport.howToCompete.map((item, i) => (
+                                        <div key={i} className="flex items-center gap-4 p-4 bg-black/20 rounded-xl border border-white/5 hover:border-indigo-500/30 transition-colors">
+                                            <span className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold font-mono text-sm border border-indigo-500/20">
+                                                {i + 1}
+                                            </span>
+                                            <p className="text-sm text-zinc-200">{item}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                        </div>
+                    )}
+                </Card>
+            </div>
         </div>
     );
 };
