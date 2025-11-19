@@ -5,7 +5,6 @@ import { BrandProfile, CampaignBlueprint, CompetitorAnalysisReport, EnhancedProm
 const KIE_API_KEY = '8774ae5d8c69b9009c49a774e9b12555';
 
 // Initialize Gemini
-// We do NOT create a static instance for Video calls because the key might change via the UI selector.
 const createAI = (apiKey?: string) => new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY });
 
 // Helper to check for Veo key selection
@@ -17,8 +16,6 @@ export const ensureVeoKey = async (): Promise<void> => {
         if (!hasKey) {
             // @ts-ignore
             await window.aistudio.openSelectKey();
-            // We assume the user selects it. If they cancel, the subsequent API call will fail,
-            // which is handled by the try/catch blocks in the caller.
         }
     }
 };
@@ -52,13 +49,10 @@ const aiService = {
   generateUGCScript: async (imageFile: File, duration: string, brandProfile?: BrandProfile): Promise<{ script: string; interactionStyles: string[]; visualDescription: string }> => {
     const ai = createAI();
     
-    // Convert File to Base64
     const base64Data = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64String = reader.result as string;
-            // Remove data url prefix for the API call if passing as inline data without mimeType handled by the SDK
-            // SDK handles pure base64 string if we pass it correctly.
             resolve(base64String.split(',')[1]);
         };
         reader.readAsDataURL(imageFile);
@@ -86,9 +80,9 @@ const aiService = {
         responseSchema: {
             type: Type.OBJECT,
             properties: {
-                script: { type: Type.STRING, description: `The spoken script for the video, strictly timed for ${duration}.` },
-                interactionStyles: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Suggested physical actions or camera movements." },
-                visualDescription: { type: Type.STRING, description: "A highly detailed visual prompt describing the subject, lighting, colors, and setting of the source image to guide video generation." }
+                script: { type: Type.STRING },
+                interactionStyles: { type: Type.ARRAY, items: { type: Type.STRING } },
+                visualDescription: { type: Type.STRING }
             }
         }
       }
@@ -117,9 +111,6 @@ const aiService = {
   },
 
   generateUGCVideo: async (params: any): Promise<string> => {
-    // Using Sora 2 via Kie AI API for UGC
-    // We construct a highly explicit prompt to ensure specifications are met.
-    
     const scriptContent = Array.isArray(params.script) ? params.script.join(' ') : params.script;
     
     const prompt = `
@@ -144,14 +135,11 @@ const aiService = {
     - Natural camera movement consistent with UGC.
     `;
     
-    // Map video length: Sora 2 supports '10' or '15'. 
-    // For '2x15s' or '30s', we map to the closest available single generation unit for now.
     let n_frames = '10';
     if (params.videoLength.includes('15') || params.videoLength.includes('30') || params.videoLength.includes('60')) {
         n_frames = '15';
     }
 
-    // 1. Create Task
     const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
         method: 'POST',
         headers: {
@@ -162,7 +150,7 @@ const aiService = {
             model: 'sora-2-text-to-video',
             input: {
                 prompt: prompt,
-                aspect_ratio: 'portrait', // UGC is typically 9:16
+                aspect_ratio: 'portrait',
                 n_frames: n_frames,
                 remove_watermark: true
             }
@@ -173,21 +161,13 @@ const aiService = {
     if (createData.code !== 200) throw new Error(createData.msg || 'Failed to start video generation');
     const taskId = createData.data.taskId;
 
-    // 2. Poll Status
     while (true) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5s
-        
+        await new Promise(resolve => setTimeout(resolve, 5000));
         const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-            headers: {
-                 'Authorization': `Bearer ${KIE_API_KEY}`
-            }
+            headers: { 'Authorization': `Bearer ${KIE_API_KEY}` }
         });
         const statusData = await statusRes.json();
-        
-        if (statusData.data.state === 'fail') {
-            throw new Error(statusData.data.failMsg || 'Video generation failed');
-        }
-        
+        if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Video generation failed');
         if (statusData.data.state === 'success') {
              const resultJson = JSON.parse(statusData.data.resultJson);
              return resultJson.resultUrls?.[0] || '';
@@ -196,12 +176,10 @@ const aiService = {
   },
 
   generatePromoVideo: async (params: any): Promise<string> => {
-    // Using Sora 2 via Kie AI API
     const finalPrompt = params.style ? `${params.prompt}. Style: ${params.style}` : params.prompt;
-    const ar = params.aspectRatio === '9:16' ? 'portrait' : 'landscape';
+    const ar = params.aspectRatio === '9:16' ? 'portrait' : params.aspectRatio === '1:1' ? 'square' : 'landscape';
     const n_frames = params.duration === '15s' ? '15' : '10';
 
-    // 1. Create Task
     const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
         method: 'POST',
         headers: {
@@ -223,21 +201,13 @@ const aiService = {
     if (createData.code !== 200) throw new Error(createData.msg || 'Failed to start video generation');
     const taskId = createData.data.taskId;
 
-    // 2. Poll Status
     while (true) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5s
-        
+        await new Promise(resolve => setTimeout(resolve, 5000));
         const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-            headers: {
-                 'Authorization': `Bearer ${KIE_API_KEY}`
-            }
+            headers: { 'Authorization': `Bearer ${KIE_API_KEY}` }
         });
         const statusData = await statusRes.json();
-        
-        if (statusData.data.state === 'fail') {
-            throw new Error(statusData.data.failMsg || 'Video generation failed');
-        }
-        
+        if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Video generation failed');
         if (statusData.data.state === 'success') {
              const resultJson = JSON.parse(statusData.data.resultJson);
              return resultJson.resultUrls?.[0] || '';
@@ -245,22 +215,74 @@ const aiService = {
     }
   },
 
+  // Updated to use Seedream V4 via Kie AI
   generateImage: async (prompt: string, aspectRatio: string): Promise<string> => {
-    const ai = createAI();
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
-        config: {
-            numberOfImages: 1,
-            outputMimeType: 'image/jpeg',
-            aspectRatio: aspectRatio as any,
+    // Map app aspect ratios to Seedream format
+    const sizeMap: Record<string, string> = {
+        '1:1': 'square_hd',
+        '16:9': 'landscape_16_9',
+        '9:16': 'portrait_16_9',
+        '4:3': 'landscape_4_3',
+        '3:4': 'portrait_4_3',
+    };
+    const imageSize = sizeMap[aspectRatio] || 'square_hd';
+
+    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${KIE_API_KEY}`
         },
+        body: JSON.stringify({
+            model: 'bytedance/seedream-v4-text-to-image',
+            input: {
+                prompt: prompt,
+                image_size: imageSize,
+                image_resolution: '2K',
+                max_images: 1,
+                seed: Math.floor(Math.random() * 1000000)
+            }
+        })
     });
-    
-    const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
-    if (!base64ImageBytes) throw new Error("Image generation failed");
-    
-    return `data:image/jpeg;base64,${base64ImageBytes}`;
+
+    const createData = await createRes.json();
+    if (createData.code !== 200) throw new Error(createData.msg || 'Failed to start image generation');
+    const taskId = createData.data.taskId;
+
+    // Polling for completion
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+            headers: { 'Authorization': `Bearer ${KIE_API_KEY}` }
+        });
+        const statusData = await statusRes.json();
+        
+        if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Image generation failed');
+        if (statusData.data.state === 'success') {
+             const resultJson = JSON.parse(statusData.data.resultJson);
+             return resultJson.resultUrls?.[0] || '';
+        }
+    }
+  },
+
+  generateFastImage: async (prompt: string): Promise<string> => {
+      const ai = createAI();
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+              parts: [{ text: prompt }]
+          },
+          config: {
+              responseModalities: [Modality.IMAGE]
+          }
+      });
+      
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+          if (part.inlineData) {
+              return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          }
+      }
+      throw new Error("Generation Failed");
   },
   
   editImage: async (imageFile: File, instruction: string): Promise<string> => {
@@ -284,13 +306,36 @@ const aiService = {
         }
     });
 
-    // Extract image
     for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
             return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
         }
     }
     throw new Error("Image editing failed");
+  },
+
+  compositeImages: async (backgroundBase64: string, foregroundBase64: string, prompt: string): Promise<string> => {
+      const ai = createAI();
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+              parts: [
+                  { inlineData: { mimeType: 'image/jpeg', data: backgroundBase64 } },
+                  { inlineData: { mimeType: 'image/jpeg', data: foregroundBase64 } },
+                  { text: `Composite these two images. ${prompt}` }
+              ]
+          },
+          config: {
+               responseModalities: [Modality.IMAGE]
+          }
+      });
+
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+          if (part.inlineData) {
+              return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          }
+      }
+      throw new Error("Composition failed");
   },
   
   generateContent: async (contentType: string, topic: string, tone?: string): Promise<string> => {
@@ -361,21 +406,12 @@ const aiService = {
         }
     });
     
-    // Second pass to structure the data
     const structureResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Extract the following fields from this analysis text into JSON:
         Text: ${response.text}
         
-        Fields to extract:
-        - targetAudience
-        - toneOfVoice
-        - contentStrengths (array of strings)
-        - contentWeaknesses (array of strings)
-        - howToCompete (array of actionable steps)
-        - keyTopics (array of 5-7 key content themes or topics they cover)
-        - socialPlatforms (array of platforms they seem active on, e.g., "LinkedIn", "Instagram")
-        - marketPosition (Choose one: "Leader", "Challenger", "Niche", or "Follower")`,
+        Fields: targetAudience, toneOfVoice, contentStrengths (array), contentWeaknesses (array), howToCompete (array), keyTopics (array), socialPlatforms (array), marketPosition ("Leader", "Challenger", "Niche", "Follower")`,
         config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -393,7 +429,6 @@ const aiService = {
             }
         }
     });
-    
     return JSON.parse(structureResponse.text || '{}');
   },
 
@@ -431,7 +466,6 @@ const aiService = {
             systemInstruction: "You are an expert marketing coach. Provide helpful, concise, and actionable advice."
         }
     });
-    
     return {
         id: Date.now().toString(),
         sender: 'coach',
@@ -453,7 +487,7 @@ const aiService = {
               speechConfig: {
                   voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
               },
-              systemInstruction: "You are a friendly, energetic marketing expert. Keep responses concise, helpful, and encouraging.",
+              systemInstruction: "You are a friendly, energetic marketing expert.",
           },
           callbacks
       });

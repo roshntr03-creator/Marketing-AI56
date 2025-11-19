@@ -73,3 +73,26 @@ export interface UserProfile {
 export interface ChecklistState {
   exploredTools: boolean;
 }
+
+// Workflow Builder Types
+export type WorkflowStepType = 'TRIGGER' | 'GENERATE_CONTENT' | 'GENERATE_IMAGE' | 'GENERATE_VIDEO';
+export type WorkflowStepStatus = 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+export interface WorkflowStep {
+    id: string;
+    type: WorkflowStepType;
+    title: string;
+    status: WorkflowStepStatus;
+    config: {
+        prompt?: string;
+        style?: string;
+        aspectRatio?: string;
+        duration?: string;
+        usePreviousOutput?: boolean; // If true, input comes from previous step result
+    };
+    output?: {
+        text?: string;
+        imageUrl?: string;
+        videoUrl?: string;
+    };
+}

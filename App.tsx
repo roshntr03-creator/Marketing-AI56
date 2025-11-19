@@ -18,6 +18,7 @@ import ImageEditorPage from './pages/ImageEditorPage';
 import PostAssistantPage from './pages/PostAssistantPage';
 import PromptEnhancerPage from './pages/PromptEnhancerPage';
 import CompetitorAnalysisPage from './pages/CompetitorAnalysisPage';
+import WorkflowBuilderPage from './pages/WorkflowBuilderPage';
 
 const AppRoutes: React.FC = () => {
     const { isAuthenticated, language } = useAppContext();
@@ -46,6 +47,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/post-assistant" element={<PostAssistantPage />} />
                     <Route path="/prompt-enhancer" element={<PromptEnhancerPage />} />
                     <Route path="/competitor-analysis" element={<CompetitorAnalysisPage />} />
+                    <Route path="/workflow-builder" element={<WorkflowBuilderPage />} />
                     
                     {/* Redirect root and auth pages to the dashboard if logged in */}
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />

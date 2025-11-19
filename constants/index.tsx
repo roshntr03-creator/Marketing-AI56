@@ -12,7 +12,8 @@ import {
     ChatBubbleOvalLeftEllipsisIcon,
     MagnifyingGlassIcon,
     BoltIcon,
-    ChartBarIcon
+    ChartBarIcon,
+    RectangleGroupIcon
 } from '@heroicons/react/24/outline';
 
 export const SIDEBAR_CATEGORIES = [
@@ -31,6 +32,12 @@ export const SIDEBAR_CATEGORIES = [
       { name: 'Image Generation', href: '/image-generator', icon: <PhotoIcon className="w-6 h-6" /> },
       { name:'Content Generation', href: '/content-generator', icon: <PencilSquareIcon className="w-6 h-6" /> },
     ],
+  },
+  {
+    title: 'Automation',
+    links: [
+        { name: 'Workflow Builder', href: '/workflow-builder', icon: <RectangleGroupIcon className="w-6 h-6" /> },
+    ]
   },
   {
     title: 'Refine',
@@ -76,6 +83,7 @@ export const TOOLS = {
   'campaigns': { name: 'Campaigns', description: "Develop marketing campaign strategies.", icon: <PresentationChartBarIcon className="w-6 h-6" /> },
   'competitor-analysis': { name: 'Competitor Analysis', description: "Analyze your competitors' strategies.", icon: <MagnifyingGlassIcon className="w-6 h-6" /> },
   'prompt-enhancer': { name: 'Prompt Enhancer', description: "Refine your ideas into powerful prompts.", icon: <SparklesIcon className="w-6 h-6" /> },
+  'workflow-builder': { name: 'Workflow Builder', description: "Build automated creative pipelines.", icon: <RectangleGroupIcon className="w-6 h-6" /> },
 };
 
 export type ToolId = keyof typeof TOOLS;
@@ -91,6 +99,7 @@ export const ALL_TOOLS_ORDER: ToolId[] = [
     'campaigns',
     'competitor-analysis',
     'prompt-enhancer',
+    'workflow-builder',
 ];
 
 export const LANDING_FEATURES = [
