@@ -7,30 +7,31 @@ export const LogoIcon = ({ className }: { className?: string }) => (
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Abstract M shape composed of a growth chart concept */}
+      <defs>
+        <linearGradient id="logoGradient" x1="4" y1="19" x2="19" y2="7" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#6366f1" />
+          <stop offset="1" stopColor="#a855f7" />
+        </linearGradient>
+      </defs>
+      {/* Abstract Graph M */}
       <path
-        d="M3 20V13L9 6L14 13L18 9"
-        stroke="currentColor"
+        d="M4 19V12L9 7L14 12L19 6"
+        stroke="url(#logoGradient)"
         strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-white"
       />
-      <circle cx="18" cy="9" r="2.5" className="fill-primary" />
+      <circle cx="19" cy="6" r="2" className="fill-indigo-500" stroke="none" />
+      <circle cx="9" cy="7" r="1.5" className="fill-indigo-400/50" stroke="none" />
+      
+      {/* Glow effect */}
       <path
-        d="M21 4L21 20"
+        d="M4 19V12L9 7L14 12L19 6"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="6"
         strokeLinecap="round"
-        className="text-primary"
-        opacity="0.8"
-      />
-      <path
-        d="M3 20H21"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="text-white/20"
+        strokeLinejoin="round"
+        className="opacity-10 blur-sm text-indigo-500"
       />
     </svg>
 );

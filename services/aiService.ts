@@ -49,7 +49,7 @@ const aiService = {
     return JSON.parse(response.text || '{}');
   },
 
-  generateUGCScript: async (imageFile: File, brandProfile?: BrandProfile): Promise<{ script: string; interactionStyles: string[] }> => {
+  generateUGCScript: async (imageFile: File, duration: string, brandProfile?: BrandProfile): Promise<{ script: string; interactionStyles: string[]; visualDescription: string }> => {
     const ai = createAI();
     
     // Convert File to Base64
@@ -65,8 +65,13 @@ const aiService = {
     });
 
     const prompt = `Create a UGC (User Generated Content) video script for TikTok/Reels based on this product image. 
+    Target Video Duration: ${duration}.
     Brand Context: ${brandProfile ? JSON.stringify(brandProfile) : 'N/A'}.
-    The script should be natural, engaging, and sound like a real user recommendation.`;
+    
+    REQUIREMENTS:
+    1. The script must be perfectly timed for ${duration} (approx 2-3 words per second).
+    2. It should be natural, engaging, and sound like a real user recommendation.
+    3. Also provide a detailed "visualDescription" of the image (subject, lighting, setting) to be used as a video generation prompt.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -81,8 +86,9 @@ const aiService = {
         responseSchema: {
             type: Type.OBJECT,
             properties: {
-                script: { type: Type.STRING, description: "The spoken script for the video." },
-                interactionStyles: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Suggested physical actions or camera movements." }
+                script: { type: Type.STRING, description: `The spoken script for the video, strictly timed for ${duration}.` },
+                interactionStyles: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Suggested physical actions or camera movements." },
+                visualDescription: { type: Type.STRING, description: "A highly detailed visual prompt describing the subject, lighting, colors, and setting of the source image to guide video generation." }
             }
         }
       }
@@ -112,15 +118,38 @@ const aiService = {
 
   generateUGCVideo: async (params: any): Promise<string> => {
     // Using Sora 2 via Kie AI API for UGC
-    // Note: Sora 2 Text-to-Video does not currently support image input in this API version,
-    // so we construct a highly descriptive prompt based on the UGC parameters.
+    // We construct a highly explicit prompt to ensure specifications are met.
     
     const scriptContent = Array.isArray(params.script) ? params.script.join(' ') : params.script;
-    const prompt = `UGC style video for social media. Scene: ${params.videoPrompt || 'Product showcase'}. Vibe: ${params.vibe}. Setting: ${params.setting}. Character: ${params.gender}. Action: ${params.selectedInteraction}. Script context: ${scriptContent}`;
+    
+    const prompt = `
+    TYPE: UGC Social Media Video (TikTok/Reels)
+    FORMAT: Vertical 9:16
+    DURATION: ${params.videoLength}
+    
+    VISUAL SCENE DESCRIPTION:
+    ${params.videoPrompt || 'A user holding the product in a natural setting.'}
+    
+    ATMOSPHERE & STYLE:
+    - Vibe: ${params.vibe}
+    - Setting: ${params.setting}
+    - Character: ${params.gender}
+    - Action: ${params.selectedInteraction}
+    
+    SCRIPT CONTEXT (For lip-sync/timing):
+    "${scriptContent}"
+    
+    TECHNICAL REQUIREMENTS:
+    - High resolution, realistic lighting, 4k.
+    - Natural camera movement consistent with UGC.
+    `;
     
     // Map video length: Sora 2 supports '10' or '15'. 
-    // For '2x15s', we generate a single 15s clip for now as the base.
-    const n_frames = (params.videoLength === '15s' || params.videoLength === '2x15s') ? '15' : '10';
+    // For '2x15s' or '30s', we map to the closest available single generation unit for now.
+    let n_frames = '10';
+    if (params.videoLength.includes('15') || params.videoLength.includes('30') || params.videoLength.includes('60')) {
+        n_frames = '15';
+    }
 
     // 1. Create Task
     const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
