@@ -355,20 +355,27 @@ const aiService = {
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Analyze the brand at this URL: ${url}. 
-        Provide a report on their target audience, tone of voice, content strengths, weaknesses, and how to compete.`,
+        Provide a detailed report on their target audience, brand tone, content strategy (strengths/weaknesses), competitive positioning, key topics they discuss, and active social platforms.`,
         config: {
             tools: [{ googleSearch: {} }],
         }
     });
     
-    const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    
-    // Second pass to structure the data from the text response
+    // Second pass to structure the data
     const structureResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Extract the following fields from this analysis text into JSON:
         Text: ${response.text}
-        Fields: targetAudience, toneOfVoice, contentStrengths (array), contentWeaknesses (array), howToCompete (array).`,
+        
+        Fields to extract:
+        - targetAudience
+        - toneOfVoice
+        - contentStrengths (array of strings)
+        - contentWeaknesses (array of strings)
+        - howToCompete (array of actionable steps)
+        - keyTopics (array of 5-7 key content themes or topics they cover)
+        - socialPlatforms (array of platforms they seem active on, e.g., "LinkedIn", "Instagram")
+        - marketPosition (Choose one: "Leader", "Challenger", "Niche", or "Follower")`,
         config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -379,6 +386,9 @@ const aiService = {
                     contentStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
                     contentWeaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
                     howToCompete: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    socialPlatforms: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    marketPosition: { type: Type.STRING, enum: ["Leader", "Challenger", "Niche", "Follower"] }
                 }
             }
         }

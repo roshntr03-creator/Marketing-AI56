@@ -37,6 +37,9 @@ export interface CompetitorAnalysisReport {
   contentStrengths: string[];
   contentWeaknesses: string[];
   howToCompete: string[];
+  keyTopics?: string[];
+  socialPlatforms?: string[];
+  marketPosition?: 'Leader' | 'Challenger' | 'Niche' | 'Follower';
 }
 
 export interface EnhancedPrompt {

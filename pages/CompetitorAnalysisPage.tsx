@@ -14,7 +14,10 @@ import {
     CheckCircleIcon,
     SignalIcon,
     UserGroupIcon,
-    MegaphoneIcon
+    MegaphoneIcon,
+    HashtagIcon,
+    ShareIcon,
+    FlagIcon
 } from '@heroicons/react/24/outline';
 import aiService from '../services/aiService';
 import { useAppContext } from '../contexts/AppContext';
@@ -46,8 +49,13 @@ const CompetitorAnalysisPage: React.FC = () => {
         const baseScore = 50;
         const strengthScore = (report.contentStrengths?.length || 0) * 8;
         const weaknessScore = (report.contentWeaknesses?.length || 0) * 5;
-        const score = baseScore + strengthScore - weaknessScore;
-        return Math.min(Math.max(score, 10), 95); // Clamp between 10 and 95
+        // Position multiplier
+        let posMultiplier = 1;
+        if (report.marketPosition === 'Leader') posMultiplier = 1.2;
+        if (report.marketPosition === 'Niche') posMultiplier = 0.8;
+        
+        const score = (baseScore + strengthScore - weaknessScore) * posMultiplier;
+        return Math.min(Math.max(Math.round(score), 10), 98); // Clamp between 10 and 98
     };
 
     const threatScore = activeReport ? calculateThreatScore(activeReport) : 0;
@@ -60,20 +68,20 @@ const CompetitorAnalysisPage: React.FC = () => {
             
             const interval = setInterval(() => {
                 setProgress(prev => {
-                    const increment = Math.random() * 5;
+                    const increment = Math.random() * 4;
                     const newProg = prev + increment;
                     
-                    if (newProg > 10 && newProg < 30) setScanStage('Crawling Sitemap...');
-                    if (newProg > 30 && newProg < 50) setScanStage('Analyzing Brand Voice...');
-                    if (newProg > 50 && newProg < 70) setScanStage('Detecting Content Gaps...');
-                    if (newProg > 70 && newProg < 90) setScanStage('Formulating Strategy...');
+                    if (newProg > 10 && newProg < 25) setScanStage('Crawling Sitemap...');
+                    if (newProg > 25 && newProg < 45) setScanStage('Identifying Brand Voice...');
+                    if (newProg > 45 && newProg < 65) setScanStage('Mapping Social Footprint...');
+                    if (newProg > 65 && newProg < 85) setScanStage('Calculating Market Threat...');
                     if (newProg >= 100) {
-                         setScanStage('Finalizing Report...');
+                         setScanStage('Finalizing Intelligence...');
                          return 100;
                     }
                     return newProg;
                 });
-            }, 200);
+            }, 150);
             
             return () => clearInterval(interval);
         }
@@ -114,6 +122,16 @@ const CompetitorAnalysisPage: React.FC = () => {
     const loadReport = (job: CreationJob) => {
         setActiveJobId(job.id);
         setUrl(job.params.url || '');
+    };
+
+    const getPositionColor = (pos?: string) => {
+        switch(pos) {
+            case 'Leader': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
+            case 'Challenger': return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
+            case 'Niche': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+            case 'Follower': return 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20';
+            default: return 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20';
+        }
     };
 
     return (
@@ -248,9 +266,17 @@ const CompetitorAnalysisPage: React.FC = () => {
                             {/* Top Header: Identity & Score */}
                             <div className="flex flex-col md:flex-row gap-8 mb-10">
                                 <div className="flex-1">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium mb-4 uppercase tracking-wider">
-                                        <SignalIcon className="w-3 h-3 animate-pulse"/> Live Analysis
+                                    <div className="flex gap-2 mb-4">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium uppercase tracking-wider">
+                                            <SignalIcon className="w-3 h-3 animate-pulse"/> Live Analysis
+                                        </div>
+                                        {activeReport.marketPosition && (
+                                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider border ${getPositionColor(activeReport.marketPosition)}`}>
+                                                <FlagIcon className="w-3 h-3"/> {activeReport.marketPosition}
+                                            </div>
+                                        )}
                                     </div>
+                                    
                                     <h2 className="text-4xl font-bold text-white font-display mb-2 tracking-tight">
                                         {currentJob?.params.url?.replace('https://', '').split('/')[0]}
                                     </h2>
@@ -284,6 +310,23 @@ const CompetitorAnalysisPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* Social Signals Row */}
+                            {activeReport.socialPlatforms && activeReport.socialPlatforms.length > 0 && (
+                                <div className="mb-8">
+                                     <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3 flex items-center gap-2">
+                                        <ShareIcon className="w-4 h-4" /> Social Signals
+                                     </h3>
+                                     <div className="flex gap-3">
+                                         {activeReport.socialPlatforms.map(platform => (
+                                             <div key={platform} className="px-4 py-2 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-300 flex items-center gap-2">
+                                                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                                 {platform}
+                                             </div>
+                                         ))}
+                                     </div>
+                                </div>
+                            )}
+
                             {/* Positioning Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                                 <div className="bg-white/5 border border-white/5 rounded-xl p-6">
@@ -307,6 +350,23 @@ const CompetitorAnalysisPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Key Topics Cloud */}
+                            {activeReport.keyTopics && activeReport.keyTopics.length > 0 && (
+                                <div className="mb-8">
+                                    <div className="flex items-center gap-2 text-pink-400 mb-4">
+                                        <HashtagIcon className="w-5 h-5" />
+                                        <h3 className="text-xs font-bold uppercase tracking-wider">Content Pillars</h3>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {activeReport.keyTopics.map((topic, i) => (
+                                            <span key={i} className="px-3 py-1.5 rounded-md bg-pink-500/5 border border-pink-500/10 text-pink-200 text-xs">
+                                                {topic}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* SWOT Section */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -354,8 +414,8 @@ const CompetitorAnalysisPage: React.FC = () => {
 
                                 <div className="grid gap-4 relative z-10">
                                     {activeReport.howToCompete.map((item, i) => (
-                                        <div key={i} className="flex items-center gap-4 p-4 bg-black/20 rounded-xl border border-white/5 hover:border-indigo-500/30 transition-colors">
-                                            <span className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold font-mono text-sm border border-indigo-500/20">
+                                        <div key={i} className="flex items-center gap-4 p-4 bg-black/20 rounded-xl border border-white/5 hover:border-indigo-500/30 transition-colors group">
+                                            <span className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold font-mono text-sm border border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
                                                 {i + 1}
                                             </span>
                                             <p className="text-sm text-zinc-200">{item}</p>
