@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -39,18 +38,18 @@ const PromoVideosPage: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-xl text-primary">
+                <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
                     <FilmIcon className="w-8 h-8" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold font-display">Cinematic Promo</h1>
-                    <p className="text-text-secondary">Generate broadcast-quality video clips using <span className="text-primary font-bold">Sora 2</span>.</p>
+                    <h1 className="text-3xl font-bold font-display text-white">Cinematic Promo</h1>
+                    <p className="text-zinc-400">Generate broadcast-quality video clips.</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                     <Card className="p-8 space-y-8 border-primary/20 shadow-xl">
+                     <Card className="p-8 space-y-8 bg-zinc-900 border-white/10">
                         <div>
                             <Textarea
                                 label="Vision Prompt"
@@ -58,19 +57,19 @@ const PromoVideosPage: React.FC = () => {
                                 onChange={(e) => setPrompt(e.target.value)}
                                 placeholder="Describe the video in detail (e.g., A drone shot of a futuristic city at sunset with neon lights)"
                                 rows={6}
-                                className="text-lg bg-background-dark font-medium"
+                                className="text-lg bg-zinc-950 font-medium border-white/10"
                             />
-                            <p className="text-xs text-text-muted mt-2 text-right">Be descriptive for best results.</p>
+                            <p className="text-xs text-zinc-500 mt-2 text-right">Be descriptive for best results.</p>
                         </div>
                         
                         <div>
-                            <label className="block text-xs font-bold text-text-secondary mb-4 uppercase tracking-wider">Visual Style</label>
+                            <label className="block text-xs font-bold text-zinc-500 mb-4 uppercase tracking-wider">Visual Style</label>
                             <div className="grid grid-cols-3 gap-3">
                                 {VIDEO_STYLES.map(s => (
                                     <button 
                                         key={s} 
                                         onClick={() => setStyle(s)}
-                                        className={`px-4 py-3 rounded-lg text-sm font-medium transition-all border ${style === s ? 'bg-primary text-white border-primary shadow-md' : 'bg-background-dark text-text-secondary border-surface-border hover:border-white/30'}`}
+                                        className={`px-4 py-3 rounded-lg text-sm font-medium transition-all border ${style === s ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-zinc-950 text-zinc-400 border-white/10 hover:bg-white/5 hover:text-white'}`}
                                     >
                                         {s}
                                     </button>
@@ -78,7 +77,7 @@ const PromoVideosPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <Button onClick={handleGenerate} isLoading={isGenerating} disabled={!prompt} className="w-full !py-4 text-lg shadow-lg shadow-primary/25" size="lg">
+                        <Button onClick={handleGenerate} isLoading={isGenerating} disabled={!prompt} className="w-full !py-4 text-lg" size="lg">
                             <SparklesIcon className="w-6 h-6 mr-2" />
                             Generate Video
                         </Button>
@@ -86,22 +85,22 @@ const PromoVideosPage: React.FC = () => {
                 </div>
                 
                 <div className="lg:col-span-1">
-                    <Card className="p-6 space-y-6 h-full bg-background-dark/50">
-                         <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Output Settings</h3>
+                    <Card className="p-6 space-y-6 h-full bg-zinc-900/50 border-white/10">
+                         <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Output Settings</h3>
                          
                          <div>
-                            <label className="block text-sm font-medium text-text-primary mb-3">Aspect Ratio</label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-3">Aspect Ratio</label>
                             <div className="flex flex-col gap-3">
                                 {['16:9', '9:16'].map(ratio => (
                                     <button 
                                         key={ratio} 
                                         onClick={() => setAspectRatio(ratio)}
-                                        className={`flex items-center p-4 rounded-xl border transition-all ${aspectRatio === ratio ? 'border-primary bg-primary/10 text-white shadow-inner' : 'border-surface-border bg-background-dark text-text-secondary hover:border-primary/50'}`}
+                                        className={`flex items-center p-4 rounded-xl border transition-all ${aspectRatio === ratio ? 'border-indigo-500 bg-indigo-500/10 text-white' : 'border-white/10 bg-zinc-950 text-zinc-500 hover:border-white/20'}`}
                                     >
                                         <div className={`border-2 border-current rounded-sm mr-4 flex-shrink-0 ${ratio === '16:9' ? 'w-10 h-6' : 'w-6 h-10'}`}></div>
                                         <div className="text-left">
-                                            <span className="font-bold block">{ratio === '16:9' ? 'Landscape' : 'Portrait'}</span>
-                                            <span className="text-xs opacity-70 block">{ratio === '16:9' ? 'YouTube / TV' : 'Reels / TikTok'}</span>
+                                            <span className="font-medium block text-sm">{ratio === '16:9' ? 'Landscape' : 'Portrait'}</span>
+                                            <span className="text-xs opacity-60 block">{ratio === '16:9' ? 'YouTube / TV' : 'Reels / TikTok'}</span>
                                         </div>
                                     </button>
                                 ))}
@@ -109,26 +108,26 @@ const PromoVideosPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-text-primary mb-3">Duration</label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-3">Duration</label>
                             <div className="flex gap-3">
                                 {VIDEO_DURATIONS.map(d => (
                                     <button 
                                         key={d} 
                                         onClick={() => setDuration(d)}
-                                        className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${duration === d ? 'border-primary bg-primary/10 text-white' : 'border-surface-border bg-background-dark text-text-secondary hover:border-primary/50'}`}
+                                        className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${duration === d ? 'border-indigo-500 bg-indigo-500/10 text-white' : 'border-white/10 bg-zinc-950 text-zinc-500 hover:border-white/20'}`}
                                     >
                                         <ClockIcon className="w-4 h-4" />
-                                        <span className="font-bold">{d}</span>
+                                        <span className="font-medium text-sm">{d}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
                         
-                        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mt-auto">
+                        <div className="p-4 bg-indigo-900/20 border border-indigo-500/20 rounded-xl mt-auto">
                             <div className="flex items-start gap-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
-                                <p className="text-xs text-blue-100 leading-relaxed">
-                                    Powered by Sora 2. Generation typically takes 2-3 minutes. The process happens in the cloud, so you can navigate away safely.
+                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0"></div>
+                                <p className="text-xs text-indigo-200 leading-relaxed">
+                                    Powered by Sora 2.
                                 </p>
                             </div>
                         </div>

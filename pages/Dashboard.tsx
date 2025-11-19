@@ -19,47 +19,40 @@ const GettingStarted: React.FC = () => {
     const progress = (completedCount / checklistItems.length) * 100;
 
     return (
-        <Card className="p-8 h-full flex flex-col relative overflow-hidden border-primary/20 bg-gradient-to-br from-background-card to-background-dark">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-                <SparklesIcon className="w-48 h-48 text-primary" />
-            </div>
-            
+        <Card className="p-8 h-full flex flex-col relative overflow-hidden bg-gradient-to-br from-indigo-900/20 to-zinc-900 border-white/10">
             <div className="flex justify-between items-end mb-6 relative z-10">
                 <div>
-                    <h3 className="font-display font-bold text-2xl text-white">Setup Progress</h3>
-                    <p className="text-sm text-text-secondary mt-1">Complete these steps to unlock full potential.</p>
+                    <h3 className="font-display font-semibold text-xl text-white">Setup Progress</h3>
+                    <p className="text-sm text-zinc-400 mt-1">Complete these steps to unlock full potential.</p>
                 </div>
-                <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{Math.round(progress)}%</span>
+                <span className="text-2xl font-bold text-indigo-400">{Math.round(progress)}%</span>
             </div>
             
-            <div className="w-full bg-background-dark rounded-full h-3 mb-8 overflow-hidden relative z-10 shadow-inner shadow-black/50 border border-white/5">
-                <div className="bg-gradient-to-r from-primary to-secondary h-3 rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(79,70,229,0.6)]" style={{ width: `${progress}%` }}></div>
+            <div className="w-full bg-white/5 rounded-full h-2 mb-8 overflow-hidden relative z-10">
+                <div className="bg-indigo-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progress}%` }}></div>
             </div>
             
-            <ul className="space-y-4 flex-1 relative z-10">
+            <ul className="space-y-3 flex-1 relative z-10">
                 {checklistItems.map((item, idx) => (
-                    <li key={item.name} className={`group flex items-center justify-between p-4 rounded-xl transition-all duration-300 border ${item.isComplete ? 'bg-primary/5 border-primary/20' : 'bg-background-dark/40 border-surface-border hover:border-primary/30 hover:bg-background-dark/60'}`}>
+                    <li key={item.name} className={`group flex items-center justify-between p-3 rounded-xl transition-all duration-200 border ${item.isComplete ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-white/5 border-transparent hover:bg-white/10'}`}>
                         <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-lg transition-colors ${item.isComplete ? 'text-white bg-green-500/20' : 'text-primary bg-primary/10 group-hover:bg-primary group-hover:text-white'}`}>
+                            <div className={`p-2 rounded-lg ${item.isComplete ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
                                 {item.icon}
                             </div>
                             <div>
-                                <span className={`text-sm font-bold block ${item.isComplete ? 'text-white' : 'text-text-primary'}`}>{item.name}</span>
-                                <span className="text-xs text-text-secondary">{item.description}</span>
+                                <span className={`text-sm font-medium block ${item.isComplete ? 'text-white' : 'text-zinc-300'}`}>{item.name}</span>
                             </div>
                         </div>
                         
                         <div>
                             {item.isComplete ? (
-                                <div className="bg-green-500/10 p-1 rounded-full">
-                                    <CheckCircleSolidIcon className="w-6 h-6 text-green-500" />
-                                </div>
+                                <CheckCircleSolidIcon className="w-5 h-5 text-indigo-500" />
                             ) : (
                                 item.action ? (
-                                    <Button size="sm" variant="secondary" onClick={item.action}>Complete</Button>
+                                    <Button size="sm" variant="secondary" onClick={item.action} className="text-xs h-8">Complete</Button>
                                 ) : (
                                     <Link to={item.href}>
-                                        <Button size="sm" variant="secondary" rightIcon={<ArrowRightIcon className="w-3 h-3" />}>Start</Button>
+                                        <Button size="sm" variant="secondary" rightIcon={<ArrowRightIcon className="w-3 h-3" />} className="text-xs h-8">Start</Button>
                                     </Link>
                                 )
                             )}
@@ -71,18 +64,16 @@ const GettingStarted: React.FC = () => {
     );
 };
 
-const StatCard: React.FC<{ label: string, count: number, icon: React.ReactNode, gradient: string }> = ({ label, count, icon, gradient }) => (
-    <div className={`bg-gradient-to-br ${gradient} bg-opacity-10 border border-white/5 rounded-xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden group h-full`}>
-        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+const StatCard: React.FC<{ label: string, count: number, icon: React.ReactNode }> = ({ label, count, icon }) => (
+    <div className="bg-white/5 border border-white/5 rounded-xl p-5 flex flex-col justify-between hover:bg-white/10 transition-colors relative overflow-hidden group h-full">
         <div className="flex justify-between items-start mb-4">
-            <div className="p-2 rounded-lg bg-black/20 backdrop-blur-sm text-white shadow-sm border border-white/5">
-                {React.cloneElement(icon as React.ReactElement, { className: `w-6 h-6` })}
+            <div className="p-2 rounded-lg bg-zinc-900/50 text-zinc-400 group-hover:text-indigo-400 transition-colors">
+                {React.cloneElement(icon as React.ReactElement, { className: `w-5 h-5` })}
             </div>
-            <div className="h-12 w-20 bg-gradient-to-r from-white/10 to-transparent rounded-full blur-2xl absolute -top-4 -right-4"></div>
         </div>
         <div>
-            <p className="text-4xl font-display font-bold text-white mb-1">{count}</p>
-            <p className="text-xs text-white/70 uppercase tracking-wider font-medium">{label}</p>
+            <p className="text-3xl font-display font-semibold text-white mb-1 tracking-tight">{count}</p>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">{label}</p>
         </div>
     </div>
 );
@@ -94,12 +85,12 @@ const UsageStats: React.FC = () => {
     const contentCount = creations.filter(c => c.type === 'CONTENT').length;
 
     return (
-        <Card className="p-8 h-full flex flex-col bg-background-card/50">
-            <h3 className="font-display font-bold text-xl text-white mb-6">Production Overview</h3>
+        <Card className="p-8 h-full flex flex-col bg-zinc-900/50 border-white/10">
+            <h3 className="font-display font-semibold text-xl text-white mb-6">Overview</h3>
             <div className="grid grid-cols-1 gap-4 flex-1">
-                <StatCard label="Images Generated" count={imageCount} icon={<PhotoIcon />} gradient="from-purple-500/20 to-blue-600/20" />
-                <StatCard label="Videos Created" count={videoCount} icon={<VideoCameraIcon />} gradient="from-pink-500/20 to-rose-600/20" />
-                <StatCard label="Content Pieces" count={contentCount} icon={<PresentationChartBarIcon />} gradient="from-amber-500/20 to-orange-600/20" />
+                <StatCard label="Images Generated" count={imageCount} icon={<PhotoIcon />} />
+                <StatCard label="Videos Created" count={videoCount} icon={<VideoCameraIcon />} />
+                <StatCard label="Content Pieces" count={contentCount} icon={<PresentationChartBarIcon />} />
             </div>
         </Card>
     );
@@ -109,36 +100,29 @@ const Dashboard: React.FC = () => {
   const { userProfile } = useAppContext();
   
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-10">
+    <div className="space-y-10 animate-fade-in max-w-7xl mx-auto pb-10">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/5">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-3 shadow-[0_0_10px_rgba(79,70,229,0.2)]">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                System Online
-            </div>
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-white mb-2">
-                Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{userProfile?.name || 'Creator'}</span>
+            <h1 className="font-display text-3xl md:text-4xl font-semibold text-white mb-2 tracking-tight">
+                Hello, <span className="text-zinc-400">{userProfile?.name || 'Creator'}</span>
             </h1>
-            <p className="text-text-secondary text-lg max-w-2xl">
-                Your enterprise AI command center is ready. Select a workflow to begin.
+            <p className="text-zinc-500">
+                Welcome to your AI command center.
             </p>
           </div>
           <Link to="/creations">
-            <Button variant="outline" className="h-12 px-6" rightIcon={<ArrowRightIcon className="w-4 h-4"/>}>Recent Activity</Button>
+            <Button variant="outline" className="h-10" rightIcon={<ArrowRightIcon className="w-4 h-4"/>}>Recent Activity</Button>
           </Link>
       </header>
 
-      {/* Quick Actions Row */}
+      {/* Quick Actions Row - Bento Grid Style */}
       <section>
-        <h2 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-4 pl-1">Quick Launch</h2>
+        <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">Quick Launch</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link to="/image-generator"><ShortcutCard title="Image Generator" icon={<PhotoIcon className="w-6 h-6"/>} description="Text to Image" color="text-purple-400" /></Link>
-            <Link to="/ugc-videos"><ShortcutCard title="UGC Creator" icon={<VideoCameraIcon className="w-6 h-6"/>} description="Viral Video Ads" color="text-pink-400" /></Link>
-            <Link to="/promo-videos"><ShortcutCard title="Promo Video" icon={<VideoCameraIcon className="w-6 h-6"/>} description="Cinematic Clips" color="text-blue-400" /></Link>
-            <Link to="/campaigns"><ShortcutCard title="Strategy Deck" icon={<PresentationChartBarIcon className="w-6 h-6"/>} description="Full Campaigns" color="text-amber-400" /></Link>
+            <Link to="/image-generator"><ShortcutCard title="Image Generator" icon={<PhotoIcon className="w-5 h-5"/>} description="Text to Image" /></Link>
+            <Link to="/ugc-videos"><ShortcutCard title="UGC Creator" icon={<VideoCameraIcon className="w-5 h-5"/>} description="Viral Video Ads" /></Link>
+            <Link to="/promo-videos"><ShortcutCard title="Promo Video" icon={<VideoCameraIcon className="w-5 h-5"/>} description="Cinematic Clips" /></Link>
+            <Link to="/campaigns"><ShortcutCard title="Strategy Deck" icon={<PresentationChartBarIcon className="w-5 h-5"/>} description="Full Campaigns" /></Link>
         </div>
       </section>
 
@@ -154,18 +138,16 @@ const Dashboard: React.FC = () => {
   );
 };
 
-const ShortcutCard: React.FC<{ title: string, icon: React.ReactNode, description: string, color: string }> = ({ title, icon, description, color }) => (
-    <div className="group relative p-1 rounded-2xl bg-gradient-to-b from-white/5 to-transparent hover:from-primary/50 transition-all duration-300 cursor-pointer hover:-translate-y-1">
-        <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        <div className="relative bg-background-card/80 backdrop-blur-xl border border-surface-border h-full p-5 rounded-xl flex items-center gap-4 overflow-hidden group-hover:border-primary/30 transition-colors">
-             <div className={`w-12 h-12 rounded-xl bg-background-dark flex items-center justify-center ${color} border border-white/5 shadow-inner group-hover:scale-110 transition-transform duration-300`}>
+const ShortcutCard: React.FC<{ title: string, icon: React.ReactNode, description: string }> = ({ title, icon, description }) => (
+    <div className="group relative p-1 rounded-xl transition-all duration-200 cursor-pointer hover:-translate-y-1">
+        <div className="relative bg-white/5 border border-white/10 hover:border-indigo-500/50 hover:bg-white/10 h-full p-5 rounded-lg flex items-center gap-4 overflow-hidden transition-all">
+             <div className={`w-10 h-10 rounded-lg bg-zinc-900/50 flex items-center justify-center text-zinc-400 group-hover:text-indigo-400 transition-colors`}>
                 {icon}
             </div>
             <div>
-                <h3 className="font-bold text-white group-hover:text-primary transition-colors">{title}</h3>
-                <p className="text-xs text-text-secondary">{description}</p>
+                <h3 className="font-medium text-white group-hover:text-indigo-400 transition-colors text-sm">{title}</h3>
+                <p className="text-xs text-zinc-500">{description}</p>
             </div>
-            <ArrowRightIcon className="w-4 h-4 text-text-muted ml-auto opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
         </div>
     </div>
 );

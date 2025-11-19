@@ -8,9 +8,11 @@ interface CardProps {
 }
 
 const Card: React.FC<CardProps> = ({ children, className = '', onClick, hoverEffect = false }) => {
-  const baseClasses = 'glass-panel rounded-xl overflow-hidden transition-all duration-300';
+  // "High-end SaaS" look: dark background, subtle border, slight noise texture hint via global CSS if applied.
+  const baseClasses = 'bg-[#121214] border border-white/5 rounded-xl overflow-hidden transition-all duration-200';
+  
   const hoverClasses = hoverEffect || onClick 
-    ? 'hover:border-primary/50 hover:shadow-[0_0_30px_rgba(79,70,229,0.15)] cursor-pointer hover:-translate-y-1' 
+    ? 'hover:border-white/10 hover:bg-[#18181b] cursor-pointer hover:shadow-xl' 
     : '';
   
   return (

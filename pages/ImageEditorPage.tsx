@@ -39,8 +39,8 @@ const ImageEditorPage: React.FC = () => {
         <div className="h-[calc(100vh-8rem)] flex flex-col animate-fade-in">
             <div className="mb-6 flex justify-between items-end">
                 <div>
-                    <h1 className="text-2xl font-bold font-display">Magic Editor</h1>
-                    <p className="text-sm text-text-secondary">Instruction-based image editing powered by Gemini.</p>
+                    <h1 className="text-2xl font-bold font-display text-white">Magic Editor</h1>
+                    <p className="text-sm text-zinc-400">Instruction-based image editing powered by Gemini.</p>
                 </div>
             </div>
 
@@ -48,13 +48,13 @@ const ImageEditorPage: React.FC = () => {
                 {/* Toolbar */}
                 <div className="lg:col-span-3 flex flex-col gap-4">
                     <Card className="p-5 flex-shrink-0 space-y-4">
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">1. Upload Source</h3>
-                        <label className="aspect-square border-2 border-dashed border-surface-border hover:border-primary rounded-xl flex flex-col items-center justify-center text-text-secondary p-4 relative bg-background-dark transition-colors group cursor-pointer">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500">1. Upload Source</h3>
+                        <label className="aspect-square border-2 border-dashed border-white/10 hover:border-indigo-500/50 rounded-xl flex flex-col items-center justify-center text-zinc-400 p-4 relative bg-white/5 transition-colors group cursor-pointer">
                             {sourcePreview ? (
                                 <img src={sourcePreview} alt="Source" className="w-full h-full object-cover rounded-lg" />
                             ) : (
                                 <>
-                                    <div className="w-10 h-10 rounded-full bg-surface-light flex items-center justify-center mb-2 group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
                                         <ArrowUpOnSquareIcon className="w-5 h-5" />
                                     </div>
                                     <p className="text-xs text-center">Click to upload</p>
@@ -64,19 +64,19 @@ const ImageEditorPage: React.FC = () => {
                                 type="file" 
                                 accept="image/*" 
                                 onChange={handleFileChange} 
-                                className="hidden" 
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             />
                         </label>
                     </Card>
 
                     <Card className="p-5 flex-shrink-0 space-y-4">
-                         <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">2. Instruction</h3>
+                         <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500">2. Instruction</h3>
                         <Input 
                             value={instruction} 
                             onChange={e => setInstruction(e.target.value)} 
                             placeholder="e.g., Make it snowy, Add a hat..."
                             disabled={!sourceFile}
-                            className="bg-background-dark"
+                            className="bg-zinc-900/50 border-white/10"
                         />
                         <Button onClick={handleEdit} isLoading={isLoading} disabled={!sourceFile || !instruction} className="w-full" size="lg">
                             <SparklesIcon className="w-5 h-5 mr-2" />
@@ -87,13 +87,13 @@ const ImageEditorPage: React.FC = () => {
 
                 {/* Main Canvas */}
                 <div className="lg:col-span-9 h-full">
-                    <Card className="h-full p-0 overflow-hidden bg-black/40 flex items-center justify-center relative border-surface-border">
-                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none"></div>
+                    <Card className="h-full p-0 overflow-hidden bg-[#0f0f11] flex items-center justify-center relative border-white/10">
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 pointer-events-none"></div>
                         
                         {isLoading ? (
                             <div className="text-center space-y-4 z-10">
-                                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                <p className="text-primary font-mono animate-pulse">Processing pixels...</p>
+                                <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                <p className="text-indigo-400 font-mono animate-pulse">Processing pixels...</p>
                             </div>
                         ) : editedImageUrl ? (
                             <div className="relative w-full h-full p-8">
@@ -106,9 +106,9 @@ const ImageEditorPage: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                             <div className="text-center text-text-muted z-10 opacity-50">
-                                <PhotoIcon className="w-24 h-24 mx-auto mb-4" />
-                                <p className="text-lg">Result Canvas</p>
+                             <div className="text-center text-zinc-700 z-10">
+                                <PhotoIcon className="w-24 h-24 mx-auto mb-4 opacity-20" />
+                                <p className="text-lg font-medium">Result Canvas</p>
                             </div>
                         )}
                     </Card>

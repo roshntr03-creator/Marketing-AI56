@@ -138,13 +138,14 @@ const UgcVideosPage: React.FC = () => {
                 return (
                     <div className="animate-fade-in">
                         <div className="flex flex-col items-center justify-center space-y-6">
-                            <label className="w-full max-w-md aspect-video border-2 border-dashed border-primary/30 hover:border-primary bg-primary/5 rounded-xl flex flex-col items-center justify-center text-text-secondary p-4 relative group transition-colors cursor-pointer">
+                            {/* Replaced custom input with label + native input for reliability */}
+                            <label className="w-full max-w-md aspect-video border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/5 rounded-xl flex flex-col items-center justify-center text-zinc-500 p-4 relative group transition-colors cursor-pointer">
                                 {imagePreview ? (
                                     <img src={imagePreview} alt="Preview" className="max-h-full max-w-full object-contain rounded-md shadow-lg" />
                                 ) : (
                                     <div className="text-center group-hover:scale-105 transition-transform">
-                                        <ArrowUpOnSquareIcon className="w-12 h-12 mb-3 mx-auto text-primary" />
-                                        <p className="font-medium text-white">Upload Product Image</p>
+                                        <ArrowUpOnSquareIcon className="w-12 h-12 mb-3 mx-auto text-indigo-500" />
+                                        <p className="font-medium text-zinc-300">Upload Product Image</p>
                                         <p className="text-xs mt-1">PNG, JPG up to 5MB</p>
                                     </div>
                                 )}
@@ -152,7 +153,7 @@ const UgcVideosPage: React.FC = () => {
                                     type="file" 
                                     accept="image/*" 
                                     onChange={handleFileChange} 
-                                    className="hidden" 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
                             </label>
                             
@@ -167,8 +168,8 @@ const UgcVideosPage: React.FC = () => {
                 return (
                     <div className="space-y-6 animate-fade-in">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                             <Textarea label="AI Script" value={script} onChange={e => setScript(e.target.value)} rows={6} className="bg-background-dark font-mono text-sm" />
-                             <Textarea label="Scene Prompt" value={videoPrompt} onChange={e => setVideoPrompt(e.target.value)} placeholder="Describe the scene details..." rows={6} className="bg-background-dark" />
+                             <Textarea label="AI Script" value={script} onChange={e => setScript(e.target.value)} rows={6} className="bg-zinc-900/50 font-mono text-sm border-white/10" />
+                             <Textarea label="Scene Prompt" value={videoPrompt} onChange={e => setVideoPrompt(e.target.value)} placeholder="Describe the scene details..." rows={6} className="bg-zinc-900/50 border-white/10" />
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/5">
@@ -178,13 +179,13 @@ const UgcVideosPage: React.FC = () => {
                         </div>
                         
                         <div className="pt-4">
-                             <h4 className="font-semibold text-text-primary mb-3 text-sm uppercase tracking-wider">Camera Movement</h4>
+                             <h4 className="font-semibold text-zinc-300 mb-3 text-sm uppercase tracking-wider">Camera Movement</h4>
                              <div className="flex flex-wrap gap-3">
                                 {interactionStyles.map(style => (
                                     <button 
                                         key={style} 
                                         onClick={() => setSelectedInteraction(style)}
-                                        className={`px-4 py-2 rounded-lg text-sm border transition-all ${selectedInteraction === style ? 'border-primary bg-primary/20 text-white' : 'border-surface-border bg-background-dark text-text-secondary'}`}
+                                        className={`px-4 py-2 rounded-lg text-sm border transition-all ${selectedInteraction === style ? 'border-indigo-500 bg-indigo-500/20 text-white' : 'border-white/10 bg-white/5 text-zinc-400 hover:border-white/20'}`}
                                     >
                                         {style}
                                     </button>
@@ -197,12 +198,12 @@ const UgcVideosPage: React.FC = () => {
                 return (
                     <div className="space-y-8 animate-fade-in">
                         <div className="flex justify-center">
-                             <div className="bg-background-dark p-1 rounded-lg border border-surface-border inline-flex">
+                             <div className="bg-zinc-900 p-1 rounded-lg border border-white/10 inline-flex">
                                 {VIDEO_LENGTHS.map(len => (
                                     <button
                                         key={len}
                                         onClick={() => setVideoLength(len)}
-                                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${videoLength === len ? 'bg-primary text-white shadow-lg' : 'text-text-secondary hover:text-white'}`}
+                                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${videoLength === len ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}
                                     >
                                         {len}
                                     </button>
@@ -210,31 +211,31 @@ const UgcVideosPage: React.FC = () => {
                              </div>
                         </div>
 
-                        {isSplitting && <div className="text-center text-primary animate-pulse">Optimizing script for 2-part series...</div>}
+                        {isSplitting && <div className="text-center text-indigo-400 animate-pulse">Optimizing script for 2-part series...</div>}
                         
                         {splitScriptParts && (
                             <div className="grid grid-cols-2 gap-4">
-                                <Card className="p-4 bg-background-dark/50 border-primary/30">
-                                    <span className="text-xs font-bold text-primary uppercase mb-2 block">Part 1</span>
-                                    <p className="text-sm text-text-secondary">{splitScriptParts.part1}</p>
+                                <Card className="p-4 bg-zinc-900/50 border-indigo-500/30">
+                                    <span className="text-xs font-bold text-indigo-400 uppercase mb-2 block">Part 1</span>
+                                    <p className="text-sm text-zinc-400">{splitScriptParts.part1}</p>
                                 </Card>
-                                <Card className="p-4 bg-background-dark/50 border-primary/30">
-                                    <span className="text-xs font-bold text-primary uppercase mb-2 block">Part 2</span>
-                                    <p className="text-sm text-text-secondary">{splitScriptParts.part2}</p>
+                                <Card className="p-4 bg-zinc-900/50 border-indigo-500/30">
+                                    <span className="text-xs font-bold text-indigo-400 uppercase mb-2 block">Part 2</span>
+                                    <p className="text-sm text-zinc-400">{splitScriptParts.part2}</p>
                                 </Card>
                             </div>
                         )}
 
                         <div className="max-w-md mx-auto">
-                            <h4 className="font-semibold text-text-primary mb-3 text-center">Brand Watermark</h4>
-                            <div className="border border-dashed border-surface-border rounded-lg p-4 flex items-center justify-between bg-background-dark/30">
+                            <h4 className="font-semibold text-zinc-300 mb-3 text-center">Brand Watermark</h4>
+                            <div className="border border-dashed border-white/10 rounded-lg p-4 flex items-center justify-between bg-white/5">
                                 <div className="flex items-center gap-3">
-                                     <div className="w-12 h-12 bg-surface-light rounded-md flex items-center justify-center overflow-hidden">
-                                        {logoPreview ? <img src={logoPreview} className="w-full h-full object-cover" /> : <PhotoIcon className="w-6 h-6 text-text-muted" />}
+                                     <div className="w-12 h-12 bg-white/10 rounded-md flex items-center justify-center overflow-hidden">
+                                        {logoPreview ? <img src={logoPreview} className="w-full h-full object-cover" /> : <PhotoIcon className="w-6 h-6 text-zinc-500" />}
                                      </div>
                                      <div>
                                          <p className="text-sm font-medium text-white">{logoFile ? logoFile.name : 'No logo selected'}</p>
-                                         <p className="text-xs text-text-muted">PNG with transparency recommended</p>
+                                         <p className="text-xs text-zinc-500">PNG with transparency recommended</p>
                                      </div>
                                 </div>
                                 <div className="relative">
@@ -260,16 +261,16 @@ const UgcVideosPage: React.FC = () => {
     return (
         <div className="space-y-8 max-w-4xl mx-auto">
              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-xl text-primary">
+                <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
                     <VideoCameraIcon className="w-8 h-8" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold font-display">UGC Creator</h1>
-                    <p className="text-text-secondary">Generate authentic, viral-style product videos from a single image.</p>
+                    <h1 className="text-3xl font-bold font-display text-white">UGC Creator</h1>
+                    <p className="text-zinc-400">Generate authentic, viral-style product videos from a single image.</p>
                 </div>
             </div>
 
-            <Card className="p-8 relative overflow-hidden">
+            <Card className="p-8 relative overflow-hidden border-white/10 bg-zinc-900/30">
                 <div className="mb-8">
                     <Stepper steps={['Upload & Analyze', 'Direct & Script', 'Produce']} currentStep={step} />
                 </div>
@@ -277,7 +278,7 @@ const UgcVideosPage: React.FC = () => {
                 {renderStepContent()}
                 
                 <div className="mt-10 flex justify-between items-center pt-6 border-t border-white/5">
-                    <Button variant="ghost" onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} className="text-text-secondary hover:text-white">
+                    <Button variant="ghost" onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} className="text-zinc-400 hover:text-white">
                         <ArrowUturnLeftIcon className="w-4 h-4 mr-2" />
                         {step === 1 ? 'Cancel' : 'Back'}
                     </Button>
@@ -288,7 +289,7 @@ const UgcVideosPage: React.FC = () => {
                         </Button>
                     )}
                     {step === 3 && (
-                        <Button onClick={handleGenerateVideo} isLoading={isGenerating} disabled={!script} size="lg" className="px-8 shadow-lg shadow-primary/20">
+                        <Button onClick={handleGenerateVideo} isLoading={isGenerating} disabled={!script} size="lg" className="px-8">
                             <VideoCameraIcon className="w-5 h-5 mr-2" />
                             Start Generation
                         </Button>
@@ -301,13 +302,13 @@ const UgcVideosPage: React.FC = () => {
 
 const OptionSelector: React.FC<{title: string, options: string[], selected: string, onSelect: (option: string) => void}> = ({ title, options, selected, onSelect }) => (
     <div>
-        <h4 className="font-semibold text-text-primary mb-3 text-sm uppercase tracking-wider">{title}</h4>
+        <h4 className="font-semibold text-zinc-300 mb-3 text-sm uppercase tracking-wider">{title}</h4>
         <div className="flex flex-wrap gap-2">
             {options.map(option => (
                 <button 
                     key={option} 
                     onClick={() => onSelect(option)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${selected === option ? 'border-primary bg-primary text-white' : 'border-surface-border bg-transparent text-text-secondary hover:border-white/30'}`}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${selected === option ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-white/10 bg-transparent text-zinc-400 hover:border-white/20 hover:text-white'}`}
                 >
                     {option}
                 </button>
