@@ -7,26 +7,30 @@ export const LogoIcon = ({ className }: { className?: string }) => (
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
+      {/* Abstract M shape composed of a growth chart concept */}
       <path
-        d="M12 2L2 7L12 12L22 7L12 2Z"
-        className="fill-primary"
-        fillOpacity="0.9"
-      />
-      <path
-        d="M2 17L12 22L22 17"
+        d="M3 20V13L9 6L14 13L18 9"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+        className="text-white"
+      />
+      <circle cx="18" cy="9" r="2.5" className="fill-primary" />
+      <path
+        d="M21 4L21 20"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
         className="text-primary"
+        opacity="0.8"
       />
       <path
-        d="M2 12L12 17L22 12"
+        d="M3 20H21"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-white/80"
+        className="text-white/20"
       />
     </svg>
 );

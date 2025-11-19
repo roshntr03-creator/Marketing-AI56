@@ -13,9 +13,9 @@ interface LogoProps {
 const Logo: React.FC<LogoProps> = ({ href, className, iconClassName, textClassName }) => {
     const { t } = useAppContext();
     return (
-        <Link to={href} className={`flex items-center gap-2 ${className || ''}`}>
+        <Link to={href} className={`flex items-center gap-3 ${className || ''}`}>
             <LogoIcon className={iconClassName} />
-            <span className={`font-bold ${textClassName}`}>{t('app_title')}</span>
+            <span className={`font-bold tracking-tight font-display ${textClassName}`}>{t('app_title')}</span>
         </Link>
     );
 };

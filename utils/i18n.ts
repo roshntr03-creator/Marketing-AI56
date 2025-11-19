@@ -1,7 +1,7 @@
 
 const translations = {
   en: {
-    'app_title': 'AI Suite',
+    'app_title': 'Marketing AI',
     'home': 'Home',
     'creations_hub': 'Creations Hub',
     'brand': 'Brand',
@@ -50,7 +50,7 @@ const translations = {
     
   },
   ar: {
-    'app_title': 'مجموعة الذكاء الاصطناعي',
+    'app_title': 'Marketing AI',
     'home': 'الرئيسية',
     'creations_hub': 'مركز الإبداعات',
     'brand': 'العلامة التجارية',
