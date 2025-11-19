@@ -1,0 +1,72 @@
+
+export interface BrandProfile {
+  brandName: string;
+  mission: string;
+  audience: string;
+  toneOfVoice: string;
+  coreValues: string[];
+  keywords: string[];
+}
+
+export type CreationJobType = 'UGC_VIDEO' | 'PROMO_VIDEO' | 'IMAGE' | 'CONTENT';
+export type CreationJobStatus = 'Pending' | 'Generating' | 'Completed' | 'Failed';
+
+export interface CreationJob {
+  id: string;
+  type: CreationJobType;
+  title: string;
+  status: CreationJobStatus;
+  createdAt: string;
+  updatedAt: string;
+  params: Record<string, any>;
+  resultUrl?: string;
+  resultText?: string;
+  error?: string;
+}
+
+export interface CampaignBlueprint {
+  campaignName: string;
+  description: string;
+  keyMessaging: string[];
+  recommendedChannels: string[];
+}
+
+export interface CompetitorAnalysisReport {
+  targetAudience: string;
+  toneOfVoice: string;
+  contentStrengths: string[];
+  contentWeaknesses: string[];
+  howToCompete: string[];
+}
+
+export interface EnhancedPrompt {
+  subject: string;
+  style: string;
+  composition: string;
+  lighting: string;
+  colorPalette: string;
+  mood: string;
+  negativePrompt: string;
+  finalPrompt: string;
+}
+
+export interface SocialPost {
+    mainText: string;
+    hashtags: string[];
+}
+
+export interface CoachMessage {
+    id: string;
+    sender: 'user' | 'coach';
+    text: string;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  plan: 'Starter' | 'Pro' | 'Enterprise';
+}
+
+export interface ChecklistState {
+  exploredTools: boolean;
+}

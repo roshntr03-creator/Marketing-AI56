@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Marketing Suite | Enterprise GenAI Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Space Grotesk for Headings, Inter for Body -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
+            },
+            colors: {
+              primary: {
+                DEFAULT: '#4f46e5', // Indigo 600
+                hover: '#4338ca',
+                glow: 'rgba(79, 70, 229, 0.5)',
+              },
+              secondary: '#ec4899', // Pink 500
+              background: {
+                dark: '#030712', // Gray 950
+                'dark-soft': '#0b101d',
+                card: '#111827', // Gray 900
+                glass: 'rgba(17, 24, 39, 0.7)',
+              },
+              surface: {
+                light: 'rgba(255, 255, 255, 0.05)',
+                border: 'rgba(255, 255, 255, 0.08)',
+              },
+              text: {
+                primary: '#f9fafb', // Gray 50
+                secondary: '#9ca3af', // Gray 400
+                muted: '#6b7280', // Gray 500
+              }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.6s ease-out forwards',
+              'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'float': 'float 6s ease-in-out infinite',
+              'gradient-x': 'gradient-x 3s ease infinite',
+              'spin-slow': 'spin 3s linear infinite',
+              'shimmer': 'shimmer 2s linear infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-20px)' },
+              },
+              'gradient-x': {
+                  '0%, 100%': {
+                      'background-size': '200% 200%',
+                      'background-position': 'left center'
+                  },
+                  '50%': {
+                      'background-size': '200% 200%',
+                      'background-position': 'right center'
+                  },
+              },
+              shimmer: {
+                'from': { transform: 'translateX(-100%)' },
+                'to': { transform: 'translateX(100%)' }
+              }
+            },
+            backdropBlur: {
+              xs: '2px',
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      html { scroll-behavior: smooth; }
+      body { background-color: #030712; color: #f9fafb; overflow-x: hidden; }
+      
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #030712; }
+      ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; border: 2px solid #030712; }
+      ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+      
+      .glass-panel {
+        background: rgba(17, 24, 39, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "@heroicons/react/": "https://aistudiocdn.com/@heroicons/react@^2.2.0/",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+      }
+    }
+    </script>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
