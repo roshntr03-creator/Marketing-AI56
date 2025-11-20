@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Button from '../components/ui/Button';
 import { Textarea } from '../components/ui/Input';
 import { 
@@ -20,7 +19,8 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon,
     MinusIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    CpuChipIcon
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '../contexts/AppContext';
 import aiService from '../services/aiService';
@@ -54,29 +54,38 @@ interface Viewport {
 // --- Visual Components ---
 
 const NodeHeader: React.FC<{ type: NodeType; title: string; status: string }> = ({ type, title, status }) => {
-    const colors = {
-        MODEL_SELECT: 'bg-pink-600 border-pink-500',
-        SCENE_GEN: 'bg-indigo-600 border-indigo-500',
-        PRODUCT_ASSET: 'bg-emerald-600 border-emerald-500',
-        COMPOSITOR: 'bg-violet-600 border-violet-500',
-        VIDEO_GEN: 'bg-orange-600 border-orange-500',
-    };
-    const icons = {
-        MODEL_SELECT: <UserIcon className="w-4 h-4 text-white" />,
-        SCENE_GEN: <PhotoIcon className="w-4 h-4 text-white" />,
-        PRODUCT_ASSET: <CubeIcon className="w-4 h-4 text-white" />,
-        COMPOSITOR: <ArrowsRightLeftIcon className="w-4 h-4 text-white" />,
-        VIDEO_GEN: <VideoCameraIcon className="w-4 h-4 text-white" />,
+    const styles = {
+        MODEL_SELECT: { bg: 'from-pink-500/20 to-rose-600/20', border: 'border-pink-500/50', iconColor: 'text-pink-400', glow: 'shadow-pink-500/20' },
+        SCENE_GEN: { bg: 'from-indigo-500/20 to-blue-600/20', border: 'border-indigo-500/50', iconColor: 'text-indigo-400', glow: 'shadow-indigo-500/20' },
+        PRODUCT_ASSET: { bg: 'from-emerald-500/20 to-teal-600/20', border: 'border-emerald-500/50', iconColor: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
+        COMPOSITOR: { bg: 'from-violet-500/20 to-purple-600/20', border: 'border-violet-500/50', iconColor: 'text-violet-400', glow: 'shadow-violet-500/20' },
+        VIDEO_GEN: { bg: 'from-orange-500/20 to-amber-600/20', border: 'border-orange-500/50', iconColor: 'text-orange-400', glow: 'shadow-orange-500/20' },
     };
 
+    const icons = {
+        MODEL_SELECT: <UserIcon className="w-4 h-4" />,
+        SCENE_GEN: <PhotoIcon className="w-4 h-4" />,
+        PRODUCT_ASSET: <CubeIcon className="w-4 h-4" />,
+        COMPOSITOR: <ArrowsRightLeftIcon className="w-4 h-4" />,
+        VIDEO_GEN: <VideoCameraIcon className="w-4 h-4" />,
+    };
+
+    const style = styles[type] || styles.MODEL_SELECT;
+
     return (
-        <div className={`flex items-center justify-between px-4 py-3 rounded-t-xl border-b border-white/10 cursor-grab active:cursor-grabbing node-handle transition-colors ${colors[type] || 'bg-zinc-700'}`}>
-            <div className="flex items-center gap-2">
-                {icons[type]}
-                <span className="text-xs font-bold text-white uppercase tracking-wider">{title}</span>
+        <div className={`flex items-center justify-between px-4 py-3 bg-gradient-to-r ${style.bg} backdrop-blur-md border-b border-white/5 cursor-grab active:cursor-grabbing node-handle relative overflow-hidden group`}>
+            {/* Animated Shine */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
+            
+            <div className="flex items-center gap-2.5 relative z-10">
+                <div className={`p-1 rounded bg-black/30 backdrop-blur border border-white/10 ${style.iconColor}`}>
+                    {icons[type]}
+                </div>
+                <span className="text-xs font-bold text-white uppercase tracking-wider font-display drop-shadow-md">{title}</span>
             </div>
-            <div className="flex gap-1.5">
-                <div className={`w-2.5 h-2.5 rounded-full border border-black/20 ${status === 'RUNNING' ? 'bg-yellow-400 animate-pulse' : status === 'COMPLETED' ? 'bg-white' : status === 'ERROR' ? 'bg-red-500' : 'bg-black/20'}`}></div>
+            <div className="flex gap-1.5 items-center">
+                {status === 'RUNNING' && <span className="text-[10px] font-mono text-indigo-300 animate-pulse mr-2">PROCESSING</span>}
+                <div className={`w-2 h-2 rounded-full border border-white/20 shadow-[0_0_10px_currentColor] ${status === 'RUNNING' ? 'bg-indigo-400 text-indigo-400 animate-pulse' : status === 'COMPLETED' ? 'bg-emerald-400 text-emerald-400' : status === 'ERROR' ? 'bg-red-500 text-red-500' : 'bg-zinc-600 text-zinc-600'}`}></div>
             </div>
         </div>
     );
@@ -92,26 +101,26 @@ const WorkflowBuilderPage: React.FC = () => {
     const [draggingNode, setDraggingNode] = useState<string | null>(null);
     const [isToolbarCollapsed, setIsToolbarCollapsed] = useState(false);
     
-    // Initial nodes moved further right (x: 550) and down (y: 150) to avoid overlapping with the top-left toolbar
+    // Initial nodes
     const [nodes, setNodes] = useState<NodeData[]>([
         { 
-            id: 'n_model', type: 'MODEL_SELECT', x: 550, y: 150, title: 'Select Model', status: 'IDLE',
+            id: 'n_model', type: 'MODEL_SELECT', x: 550, y: 150, title: 'Base Model', status: 'IDLE',
             data: { prompt: 'A professional fashion model posing naturally, studio lighting', result: null } 
         },
         { 
-            id: 'n_scene', type: 'SCENE_GEN', x: 550, y: 550, title: 'Scene Generator', status: 'IDLE',
+            id: 'n_scene', type: 'SCENE_GEN', x: 550, y: 550, title: 'Environment', status: 'IDLE',
             data: { prompt: 'A minimalist luxury marble podium, soft shadows, high key lighting', result: null } 
         },
         { 
-            id: 'n_product', type: 'PRODUCT_ASSET', x: 1000, y: 350, title: 'Product Object', status: 'IDLE',
+            id: 'n_product', type: 'PRODUCT_ASSET', x: 1000, y: 350, title: 'Product Input', status: 'IDLE',
             data: { file: null, preview: null } 
         },
         { 
-            id: 'n_comp', type: 'COMPOSITOR', x: 1450, y: 350, title: 'Composition Engine', status: 'IDLE',
+            id: 'n_comp', type: 'COMPOSITOR', x: 1450, y: 350, title: 'AI Compositor', status: 'IDLE',
             data: { prompt: 'Place the product naturally in the scene, ensuring realistic shadows and lighting matches.', result: null } 
         },
         { 
-            id: 'n_video', type: 'VIDEO_GEN', x: 1900, y: 350, title: 'Video Result', status: 'IDLE',
+            id: 'n_video', type: 'VIDEO_GEN', x: 1900, y: 350, title: 'Motion Gen', status: 'IDLE',
             data: { prompt: 'Cinematic slow motion camera orbit around the product', result: null } 
         }
     ]);
@@ -129,11 +138,7 @@ const WorkflowBuilderPage: React.FC = () => {
         e.preventDefault();
         const scaleFactor = 0.001;
         const newZoom = Math.min(Math.max(viewport.zoom - e.deltaY * scaleFactor, 0.2), 2);
-        
-        setViewport(prev => ({
-            ...prev,
-            zoom: newZoom
-        }));
+        setViewport(prev => ({ ...prev, zoom: newZoom }));
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -144,25 +149,16 @@ const WorkflowBuilderPage: React.FC = () => {
         }
         
         if ((e.target as HTMLElement).closest('input, textarea, button')) return;
-
         setIsPanning(true);
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (isPanning) {
-            setViewport(prev => ({
-                ...prev,
-                x: prev.x + e.movementX,
-                y: prev.y + e.movementY
-            }));
+            setViewport(prev => ({ ...prev, x: prev.x + e.movementX, y: prev.y + e.movementY }));
         } else if (draggingNode) {
             setNodes(prev => prev.map(n => {
                 if (n.id === draggingNode) {
-                    return {
-                        ...n,
-                        x: n.x + e.movementX / viewport.zoom,
-                        y: n.y + e.movementY / viewport.zoom
-                    };
+                    return { ...n, x: n.x + e.movementX / viewport.zoom, y: n.y + e.movementY / viewport.zoom };
                 }
                 return n;
             }));
@@ -175,11 +171,7 @@ const WorkflowBuilderPage: React.FC = () => {
     };
 
     const pan = (dx: number, dy: number) => {
-        setViewport(prev => ({
-            ...prev,
-            x: prev.x + dx,
-            y: prev.y + dy
-        }));
+        setViewport(prev => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
     };
 
     // --- Helper Functions ---
@@ -309,11 +301,12 @@ const WorkflowBuilderPage: React.FC = () => {
         const n2 = nodes.find(n => n.id === conn.to);
         if (!n1 || !n2) return null;
 
-        const w = 320;
+        const w = 340; // node width
+        const h = 400; // approx node height
         const startX = n1.x + w;
-        const startY = n1.y + 80;
+        const startY = n1.y + 80; // Approximate output handle Y
         const endX = n2.x;
-        const endY = n2.y + 80;
+        const endY = n2.y + 80; // Approximate input handle Y
 
         const dist = Math.abs(endX - startX);
         const cp1x = startX + dist * 0.5;
@@ -322,49 +315,70 @@ const WorkflowBuilderPage: React.FC = () => {
         const pathData = `M ${startX} ${startY} C ${cp1x} ${startY}, ${cp2x} ${endY}, ${endX} ${endY}`;
         
         const isActive = n1.status === 'COMPLETED';
+        const isError = n1.status === 'ERROR';
 
         return (
             <g key={conn.id}>
-                <path d={pathData} stroke="rgba(0,0,0,0.5)" strokeWidth="6" fill="none" />
-                <path d={pathData} stroke="#3f3f46" strokeWidth="3" fill="none" />
-                <path 
-                    d={pathData} 
-                    stroke={isActive ? '#6366f1' : 'transparent'} 
-                    strokeWidth="3" 
-                    fill="none" 
-                    className="transition-all duration-1000"
-                    strokeDasharray={isActive ? "10,5" : "0"}
-                >
-                    {isActive && <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />}
-                </path>
+                {/* Glow underlying stroke */}
+                <path d={pathData} stroke={isActive ? "rgba(99,102,241,0.4)" : "transparent"} strokeWidth="12" fill="none" className="transition-all duration-500" style={{filter: 'blur(6px)'}} />
+                {/* Background stroke */}
+                <path d={pathData} stroke="#18181b" strokeWidth="6" fill="none" />
+                {/* Main connection line */}
+                <path d={pathData} stroke={isActive ? "url(#gradientStroke)" : "#3f3f46"} strokeWidth="3" fill="none" className="transition-all duration-500" />
+                
+                {/* Animated particles for active flows */}
+                {isActive && (
+                     <circle r="3" fill="#fff">
+                        <animateMotion dur="1.5s" repeatCount="indefinite" path={pathData} calcMode="linear" keyPoints="0;1" keyTimes="0;1" />
+                     </circle>
+                )}
             </g>
         );
     };
 
     return (
-        <div className="relative w-full h-[calc(100vh-4rem)] bg-[#050505] overflow-hidden select-none">
+        <div className="relative w-full h-[calc(100vh-4rem)] bg-[#020203] overflow-hidden select-none font-sans">
             
-            {/* Toolbar - Collapsible */}
-            <div className="absolute top-6 left-6 z-50 flex flex-col gap-4">
-                <div className={`bg-zinc-900/90 backdrop-blur border border-white/10 rounded-2xl shadow-2xl max-w-xs transition-all duration-300 overflow-hidden ${isToolbarCollapsed ? 'w-12 h-12 p-0 flex items-center justify-center cursor-pointer' : 'p-5 w-80'}`}>
+            {/* Toolbar - Collapsible Floating Island */}
+            <div className="absolute top-8 left-8 z-50 flex flex-col gap-4">
+                <div className={`bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out overflow-hidden ${isToolbarCollapsed ? 'w-14 h-14 p-0 flex items-center justify-center cursor-pointer hover:bg-zinc-800' : 'p-6 w-80'}`}>
                     {isToolbarCollapsed ? (
-                        <button onClick={() => setIsToolbarCollapsed(false)} title="Show Info">
-                            <QuestionMarkCircleIcon className="w-6 h-6 text-indigo-500" />
+                        <button onClick={() => setIsToolbarCollapsed(false)} title="Show Info" className="w-full h-full flex items-center justify-center">
+                            <CpuChipIcon className="w-6 h-6 text-indigo-400" />
                         </button>
                     ) : (
-                        <div className="relative">
-                            <div className="flex justify-between items-start mb-2">
-                                <h1 className="font-bold text-white text-xl font-display">Visual Builder</h1>
-                                <button onClick={() => setIsToolbarCollapsed(true)} className="text-zinc-500 hover:text-white">
+                        <div className="relative animate-fade-in">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-500/20 rounded-xl border border-indigo-500/30 text-indigo-400">
+                                        <CpuChipIcon className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h1 className="font-bold text-white text-lg font-display tracking-tight">Workflow OS</h1>
+                                        <p className="text-[10px] text-indigo-300 font-mono uppercase tracking-wider">v2.4.0 • Connected</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setIsToolbarCollapsed(true)} className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors">
                                     <MinusIcon className="w-5 h-5" />
                                 </button>
                             </div>
-                            <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                                Pan (Drag BG or use Controls), Zoom (Scroll), and Move Nodes to build your pipeline.
-                            </p>
-                            <div className="flex gap-2">
-                                <Button size="sm" variant="secondary" onClick={() => setViewport({x: 0, y: 0, zoom: 1})}>
-                                    <ArrowPathIcon className="w-4 h-4 mr-1" /> Reset View
+                            <div className="space-y-3">
+                                <div className="bg-black/40 rounded-xl p-3 border border-white/5">
+                                    <div className="flex justify-between text-xs text-zinc-400 mb-1">
+                                        <span>GPU Usage</span>
+                                        <span className="text-white">32%</span>
+                                    </div>
+                                    <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                        <div className="h-full w-[32%] bg-indigo-500 rounded-full"></div>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-zinc-500 leading-relaxed">
+                                    Design your generation pipeline. Drag to pan, scroll to zoom. Connect nodes to chain AI models.
+                                </p>
+                            </div>
+                            <div className="mt-6 flex gap-2">
+                                <Button size="sm" variant="secondary" onClick={() => setViewport({x: 0, y: 0, zoom: 1})} className="w-full justify-center bg-white/5 border-white/10 hover:bg-white/10 text-xs">
+                                    <ArrowPathIcon className="w-3.5 h-3.5 mr-2" /> Recenter
                                 </Button>
                             </div>
                         </div>
@@ -372,46 +386,18 @@ const WorkflowBuilderPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Navigation & Zoom Controls (Bottom Right) */}
+            {/* Navigation & Zoom Controls (Bottom Right) - Floating Glass */}
             <div className="absolute bottom-8 right-8 z-50 flex flex-col gap-4 items-end">
-                 {/* Zoom */}
-                 <div className="bg-zinc-900/90 backdrop-blur border border-white/10 p-2 rounded-xl shadow-xl flex flex-col gap-2 items-center">
-                     <button onClick={() => setViewport(p => ({...p, zoom: Math.min(p.zoom + 0.1, 2)}))} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                 <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl flex flex-col gap-1 items-center">
+                     <button onClick={() => setViewport(p => ({...p, zoom: Math.min(p.zoom + 0.1, 2)}))} className="p-2.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors">
                         <MagnifyingGlassPlusIcon className="w-5 h-5" />
                      </button>
-                     <span className="text-[10px] font-mono text-zinc-500 select-none">{Math.round(viewport.zoom * 100)}%</span>
-                     <button onClick={() => setViewport(p => ({...p, zoom: Math.max(p.zoom - 0.1, 0.2)}))} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                     <div className="w-8 h-px bg-white/10"></div>
+                     <span className="text-[10px] font-mono text-zinc-500 py-1 select-none">{Math.round(viewport.zoom * 100)}%</span>
+                     <div className="w-8 h-px bg-white/10"></div>
+                     <button onClick={() => setViewport(p => ({...p, zoom: Math.max(p.zoom - 0.1, 0.2)}))} className="p-2.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors">
                         <MagnifyingGlassMinusIcon className="w-5 h-5" />
                      </button>
-                </div>
-
-                {/* D-Pad Navigation */}
-                <div className="bg-zinc-900/90 backdrop-blur border border-white/10 p-3 rounded-full shadow-xl grid grid-cols-3 gap-1 w-32 h-32">
-                     <div className="col-start-2 flex items-center justify-center">
-                        <button onClick={() => pan(0, 100)} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors" title="Pan Up">
-                            <ChevronUpIcon className="w-6 h-6" />
-                        </button>
-                     </div>
-                     <div className="col-start-1 row-start-2 flex items-center justify-center">
-                        <button onClick={() => pan(100, 0)} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors" title="Pan Left">
-                            <ChevronLeftIcon className="w-6 h-6" />
-                        </button>
-                     </div>
-                     <div className="col-start-2 row-start-2 flex items-center justify-center">
-                        <div className="w-8 h-8 flex items-center justify-center text-zinc-600">
-                            <ArrowsPointingOutIcon className="w-5 h-5"/>
-                        </div>
-                     </div>
-                     <div className="col-start-3 row-start-2 flex items-center justify-center">
-                        <button onClick={() => pan(-100, 0)} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors" title="Pan Right">
-                            <ChevronRightIcon className="w-6 h-6" />
-                        </button>
-                     </div>
-                     <div className="col-start-2 row-start-3 flex items-center justify-center">
-                        <button onClick={() => pan(0, -100)} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors" title="Pan Down">
-                            <ChevronDownIcon className="w-6 h-6" />
-                        </button>
-                     </div>
                 </div>
             </div>
 
@@ -426,17 +412,32 @@ const WorkflowBuilderPage: React.FC = () => {
                 onMouseLeave={handleMouseUp}
             >
                 <div 
-                    className="origin-top-left w-full h-full transition-transform duration-75 ease-out will-change-transform"
+                    className="origin-top-left w-full h-full transition-transform duration-100 ease-out will-change-transform"
                     style={{
                         transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
                     }}
                 >
-                    {/* Infinite Grid Background */}
+                    {/* SVG Gradients Definition */}
+                    <svg className="absolute w-0 h-0">
+                        <defs>
+                            <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#818cf8" />
+                                <stop offset="100%" stopColor="#c084fc" />
+                            </linearGradient>
+                            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
+                            </pattern>
+                        </defs>
+                    </svg>
+
+                    {/* Technical Background */}
                     <div 
-                        className="absolute -top-[10000px] -left-[10000px] w-[20000px] h-[20000px] pointer-events-none opacity-20"
+                        className="absolute -top-[10000px] -left-[10000px] w-[20000px] h-[20000px] pointer-events-none"
                         style={{
-                            backgroundImage: 'radial-gradient(#4b5563 1px, transparent 1px)',
-                            backgroundSize: '30px 30px'
+                            backgroundColor: '#050505',
+                            backgroundImage: 'radial-gradient(#27272a 1px, transparent 1px), radial-gradient(#18181b 1px, transparent 1px)',
+                            backgroundSize: '40px 40px, 200px 200px',
+                            backgroundPosition: '0 0, 20px 20px'
                         }}
                     ></div>
 
@@ -453,7 +454,7 @@ const WorkflowBuilderPage: React.FC = () => {
                             <div
                                 key={node.id}
                                 data-node-id={node.id}
-                                className={`absolute w-[320px] bg-zinc-900 border rounded-xl shadow-[0_30px_80px_rgba(0,0,0,0.6)] flex flex-col transition-shadow duration-200 ${node.status === 'RUNNING' ? 'border-indigo-500 ring-2 ring-indigo-500/20' : node.status === 'ERROR' ? 'border-red-500/50' : 'border-white/10'}`}
+                                className={`absolute w-[340px] bg-[#09090b]/80 backdrop-blur-xl border rounded-2xl shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 group ${node.status === 'RUNNING' ? 'border-indigo-500/50 ring-1 ring-indigo-500/30' : node.status === 'ERROR' ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-white/10 hover:border-white/20'}`}
                                 style={{ 
                                     transform: `translate(${node.x}px, ${node.y}px)`,
                                     zIndex: draggingNode === node.id ? 100 : 10 
@@ -461,35 +462,36 @@ const WorkflowBuilderPage: React.FC = () => {
                             >
                                 <NodeHeader type={node.type} title={node.title} status={node.status} />
                                 
-                                <div className="p-4 space-y-4 relative">
+                                <div className="p-5 space-y-5 relative">
                                     {node.errorMessage && (
-                                        <div className="bg-red-500/10 border border-red-500/20 p-2 rounded text-[10px] text-red-400 mb-2">
-                                            Error: {node.errorMessage}
+                                        <div className="bg-red-950/30 border border-red-500/20 p-3 rounded-lg flex items-start gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
+                                            <span className="text-[10px] text-red-300 leading-relaxed font-mono">{node.errorMessage}</span>
                                         </div>
                                     )}
 
                                     {(node.type === 'SCENE_GEN' || node.type === 'MODEL_SELECT') && (
                                         <>
                                             <div>
-                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1 block">Prompt Configuration</label>
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block font-mono">Prompt Logic</label>
                                                 <Textarea 
                                                     value={node.data.prompt} 
                                                     onChange={(e) => updateNodeData(node.id, { prompt: e.target.value })}
-                                                    className="text-xs bg-zinc-950 min-h-[80px] border-white/5 resize-y"
-                                                    placeholder="Describe generation..."
+                                                    className="text-xs bg-black/50 min-h-[80px] border-white/5 resize-y rounded-lg text-zinc-300 font-mono leading-relaxed focus:border-white/10 focus:bg-black/80 transition-colors"
+                                                    placeholder="Enter generation parameters..."
                                                 />
                                             </div>
                                             {node.data.result ? (
-                                                <div className="relative group rounded-lg overflow-hidden border border-white/10">
-                                                    <img src={node.data.result} className="w-full h-32 object-cover" />
-                                                    <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                                                        <a href={node.data.result} target="_blank" rel="noreferrer">
-                                                            <ArrowsPointingOutIcon className="w-5 h-5 text-white drop-shadow-md" />
+                                                <div className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/50 aspect-video">
+                                                    <img src={node.data.result} className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                                                        <a href={node.data.result} target="_blank" rel="noreferrer" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors border border-white/10">
+                                                            <ArrowsPointingOutIcon className="w-5 h-5 text-white" />
                                                         </a>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="h-32 bg-zinc-950 rounded-lg border border-white/5 flex items-center justify-center border-dashed">
+                                                <div className="aspect-video bg-black/20 rounded-lg border border-white/5 flex items-center justify-center border-dashed group-hover:border-white/10 transition-colors">
                                                     <SparklesIcon className="w-6 h-6 text-zinc-800" />
                                                 </div>
                                             )}
@@ -497,9 +499,9 @@ const WorkflowBuilderPage: React.FC = () => {
                                                 size="sm" 
                                                 onClick={() => runImageGen(node)} 
                                                 isLoading={node.status === 'RUNNING'} 
-                                                className={`w-full ${node.status === 'COMPLETED' ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : ''}`}
+                                                className={`w-full py-2.5 text-xs font-medium ${node.status === 'COMPLETED' ? 'bg-zinc-800 border-white/5 text-zinc-300 hover:bg-zinc-700' : 'shadow-lg shadow-indigo-500/10'}`}
                                             >
-                                                {node.status === 'COMPLETED' ? 'Regenerate' : 'Generate'}
+                                                {node.status === 'COMPLETED' ? <span className="flex items-center"><ArrowPathIcon className="w-3 h-3 mr-2"/> Regenerate</span> : 'Execute Node'}
                                             </Button>
                                         </>
                                     )}
@@ -508,23 +510,30 @@ const WorkflowBuilderPage: React.FC = () => {
                                         <>
                                             <div className="relative group">
                                                 {node.data.preview ? (
-                                                    <div className="relative rounded-lg overflow-hidden border border-white/10">
-                                                        <img src={node.data.preview} className="w-full h-48 object-contain bg-zinc-950/50 p-2" />
-                                                        <button 
-                                                            className="absolute top-2 right-2 bg-zinc-900/80 p-1 rounded hover:bg-red-500/20 hover:text-red-400 transition-colors"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                updateNodeData(node.id, { file: null, preview: null });
-                                                                updateNode(node.id, { status: 'IDLE' });
-                                                            }}
-                                                        >
-                                                            <ArrowPathIcon className="w-3 h-3" />
-                                                        </button>
+                                                    <div className="relative rounded-lg overflow-hidden border border-white/10 bg-black/50">
+                                                        <img src={node.data.preview} className="w-full h-48 object-contain p-4" />
+                                                        <div className="absolute top-2 right-2">
+                                                            <button 
+                                                                className="p-1.5 bg-black/60 backdrop-blur rounded-lg border border-white/10 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    updateNodeData(node.id, { file: null, preview: null });
+                                                                    updateNode(node.id, { status: 'IDLE' });
+                                                                }}
+                                                            >
+                                                                <ArrowPathIcon className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ) : (
-                                                    <label className="h-48 bg-zinc-950 rounded-lg border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900/50 hover:border-emerald-500/30 transition-all cursor-pointer">
-                                                        <ArrowUpOnSquareIcon className="w-8 h-8 text-zinc-700" />
-                                                        <span className="text-xs text-zinc-500 font-medium">Upload Product</span>
+                                                    <label className="h-48 bg-black/20 rounded-xl border-2 border-dashed border-white/5 flex flex-col items-center justify-center gap-3 hover:bg-black/40 hover:border-indigo-500/30 transition-all cursor-pointer group/upload">
+                                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover/upload:scale-110 transition-transform duration-300">
+                                                            <ArrowUpOnSquareIcon className="w-5 h-5 text-zinc-500 group-hover/upload:text-indigo-400" />
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <span className="text-xs text-zinc-300 font-medium block">Upload Asset</span>
+                                                            <span className="text-[10px] text-zinc-600">PNG, JPG, WEBP</span>
+                                                        </div>
                                                         <input 
                                                             type="file" 
                                                             className="hidden"
@@ -548,26 +557,26 @@ const WorkflowBuilderPage: React.FC = () => {
                                     {node.type === 'COMPOSITOR' && (
                                         <>
                                             <div>
-                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1 block">Compositing Logic</label>
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block font-mono">Merge Instructions</label>
                                                 <Textarea 
                                                     value={node.data.prompt} 
                                                     onChange={(e) => updateNodeData(node.id, { prompt: e.target.value })}
-                                                    className="text-xs bg-zinc-950 min-h-[60px] border-white/5"
+                                                    className="text-xs bg-black/50 min-h-[60px] border-white/5 rounded-lg font-mono"
                                                     placeholder="Instructions..."
                                                 />
                                             </div>
                                             {node.data.result ? (
-                                                 <div className="relative group rounded-lg overflow-hidden border border-white/10">
-                                                    <img src={node.data.result} className="w-full h-32 object-cover" />
+                                                 <div className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/50 aspect-video">
+                                                    <img src={node.data.result} className="w-full h-full object-cover" />
                                                 </div>
                                             ) : (
-                                                <div className="h-32 bg-zinc-950 rounded-lg flex flex-col items-center justify-center text-zinc-700 text-xs font-medium tracking-wider border border-white/5 border-dashed">
+                                                <div className="aspect-video bg-black/20 rounded-lg flex flex-col items-center justify-center text-zinc-700 text-[10px] font-bold tracking-widest border border-white/5 border-dashed">
                                                     <ArrowsRightLeftIcon className="w-6 h-6 mb-2 opacity-20" />
-                                                    <span>WAITING FOR INPUTS</span>
+                                                    <span>AWAITING SIGNALS</span>
                                                 </div>
                                             )}
-                                            <Button size="sm" onClick={() => runCompositor(node)} isLoading={node.status === 'RUNNING'} className="w-full">
-                                                Run Composition
+                                            <Button size="sm" onClick={() => runCompositor(node)} isLoading={node.status === 'RUNNING'} className="w-full py-2.5 text-xs font-medium shadow-lg shadow-violet-500/10">
+                                                Initialize Merge
                                             </Button>
                                         </>
                                     )}
@@ -575,30 +584,30 @@ const WorkflowBuilderPage: React.FC = () => {
                                     {node.type === 'VIDEO_GEN' && (
                                         <>
                                             <div>
-                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1 block">Motion Prompt</label>
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block font-mono">Camera Control</label>
                                                 <Textarea 
                                                     value={node.data.prompt} 
                                                     onChange={(e) => updateNodeData(node.id, { prompt: e.target.value })}
-                                                    className="text-xs bg-zinc-950 min-h-[60px] border-white/5"
+                                                    className="text-xs bg-black/50 min-h-[60px] border-white/5 rounded-lg font-mono"
                                                 />
                                             </div>
                                              {node.data.result ? (
-                                                <video src={node.data.result} controls autoPlay loop className="w-full h-40 object-cover rounded-lg border border-white/10" />
+                                                <video src={node.data.result} controls autoPlay loop className="w-full h-40 object-cover rounded-lg border border-white/10 bg-black" />
                                             ) : (
-                                                <div className="h-40 bg-zinc-950 rounded-lg flex items-center justify-center text-zinc-700 text-xs font-medium tracking-wider border border-white/5 border-dashed">
+                                                <div className="h-40 bg-black/20 rounded-lg flex items-center justify-center text-zinc-700 text-[10px] font-bold tracking-widest border border-white/5 border-dashed">
                                                     <VideoCameraIcon className="w-8 h-8 mb-2 opacity-20" />
                                                 </div>
                                             )}
-                                            <Button size="sm" onClick={() => runVideoGen(node)} isLoading={node.status === 'RUNNING'} className="w-full">
-                                                <PlayIcon className="w-3 h-3 mr-2" /> Generate Video
+                                            <Button size="sm" onClick={() => runVideoGen(node)} isLoading={node.status === 'RUNNING'} className="w-full py-2.5 text-xs font-medium shadow-lg shadow-orange-500/10">
+                                                <PlayIcon className="w-3 h-3 mr-2" /> Render Sequence
                                             </Button>
                                         </>
                                     )}
                                 </div>
 
-                                {/* Connection Ports */}
-                                <div className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3 h-3 bg-zinc-500 rounded-full border-2 border-zinc-900 hover:bg-white transition-colors cursor-pointer" title="Input"></div>
-                                <div className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-3 h-3 bg-zinc-500 rounded-full border-2 border-zinc-900 hover:bg-white transition-colors cursor-pointer" title="Output"></div>
+                                {/* Connection Ports - Styled */}
+                                <div className="absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-4 bg-zinc-800 rounded-full border-2 border-zinc-600 hover:bg-white hover:border-indigo-500 hover:scale-125 transition-all cursor-pointer shadow-lg" title="Input"></div>
+                                <div className="absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-4 bg-zinc-800 rounded-full border-2 border-zinc-600 hover:bg-white hover:border-indigo-500 hover:scale-125 transition-all cursor-pointer shadow-lg" title="Output"></div>
                             </div>
                         ))}
                     </div>
