@@ -11,30 +11,25 @@ import {
     CreditCardIcon, 
     UsersIcon, 
     BellIcon, 
-    CommandLineIcon, 
-    KeyIcon, 
     ArrowRightOnRectangleIcon, 
     TrashIcon, 
     CheckCircleIcon, 
     ExclamationTriangleIcon, 
     PlusIcon, 
-    DocumentDuplicateIcon,
     ArrowDownTrayIcon,
-    CheckIcon,
-    ClockIcon
+    EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
-// --- Types & Mock Data ---
+// --- Types ---
 
-type SettingsTab = 'account' | 'billing' | 'team' | 'notifications' | 'api';
+type SettingsTab = 'account' | 'billing' | 'team' | 'notifications';
 
 interface TeamMember {
     id: string;
     name: string;
     email: string;
-    role: 'Admin' | 'Editor' | 'Viewer';
+    role: 'Owner' | 'Admin' | 'Editor' | 'Viewer';
     status: 'Active' | 'Pending';
-    avatar?: string;
 }
 
 interface Invoice {
@@ -44,30 +39,6 @@ interface Invoice {
     status: 'Paid' | 'Pending';
     plan: string;
 }
-
-interface ApiKey {
-    id: string;
-    name: string;
-    prefix: string;
-    created: string;
-    lastUsed: string;
-}
-
-const MOCK_TEAM: TeamMember[] = [
-    { id: '1', name: 'Alex Creator', email: 'alex@company.com', role: 'Admin', status: 'Active' },
-    { id: '2', name: 'Sarah Designer', email: 'sarah@company.com', role: 'Editor', status: 'Active' },
-    { id: '3', name: 'Mike Marketing', email: 'mike@company.com', role: 'Viewer', status: 'Pending' },
-];
-
-const MOCK_INVOICES: Invoice[] = [
-    { id: 'INV-2024-001', date: 'Oct 1, 2024', amount: '$99.00', status: 'Paid', plan: 'Pro Plan' },
-    { id: 'INV-2024-002', date: 'Sep 1, 2024', amount: '$99.00', status: 'Paid', plan: 'Pro Plan' },
-    { id: 'INV-2024-003', date: 'Aug 1, 2024', amount: '$29.00', status: 'Paid', plan: 'Starter Plan' },
-];
-
-const MOCK_KEYS: ApiKey[] = [
-    { id: 'key_1', name: 'Production App', prefix: 'pk_live_...', created: '2024-01-15', lastUsed: '2 mins ago' },
-];
 
 // --- Sub-Components ---
 
@@ -82,16 +53,16 @@ const TabButton: React.FC<{
         onClick={onClick}
         className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left group ${
             active 
-            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+            ? 'bg-zinc-800 text-white shadow-inner border border-white/5' 
             : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
         }`}
     >
-        <div className={`p-2 rounded-lg ${active ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-300'}`}>
+        <div className={`p-2 rounded-lg ${active ? 'bg-indigo-500/20 text-indigo-400' : 'bg-zinc-900 text-zinc-500 group-hover:text-zinc-400'}`}>
             {icon}
         </div>
         <div>
             <span className="block text-sm font-semibold">{label}</span>
-            {description && <span className={`text-[10px] block ${active ? 'text-indigo-200' : 'text-zinc-500'}`}>{description}</span>}
+            {description && <span className={`text-[10px] block ${active ? 'text-zinc-400' : 'text-zinc-600'}`}>{description}</span>}
         </div>
     </button>
 );
@@ -100,18 +71,26 @@ const SettingsPage: React.FC = () => {
     const { userProfile, logout, setLanguage, language } = useAppContext();
     const [activeTab, setActiveTab] = useState<SettingsTab>('account');
     
-    // State for interactions
-    const [team, setTeam] = useState(MOCK_TEAM);
-    const [apiKeys, setApiKeys] = useState(MOCK_KEYS);
+    // Local State for "Factual" representation
+    // We initialize team with just the current user to be accurate to the session state
+    const [team, setTeam] = useState<TeamMember[]>([
+        { 
+            id: 'current-user', 
+            name: userProfile?.name || 'User', 
+            email: userProfile?.email || 'user@example.com', 
+            role: 'Owner', 
+            status: 'Active' 
+        }
+    ]);
+    
     const [inviteEmail, setInviteEmail] = useState('');
-    const [copiedKey, setCopiedKey] = useState<string | null>(null);
     
     // Notifications State
     const [notifMarketing, setNotifMarketing] = useState(false);
     const [notifSecurity, setNotifSecurity] = useState(true);
     const [notifUpdates, setNotifUpdates] = useState(true);
 
-    // --- Handlers ---
+    // Handlers
     const handleInvite = (e: React.FormEvent) => {
         e.preventDefault();
         if (!inviteEmail) return;
@@ -126,159 +105,141 @@ const SettingsPage: React.FC = () => {
         setInviteEmail('');
     };
 
-    const handleDeleteKey = (id: string) => {
-        setApiKeys(apiKeys.filter(k => k.id !== id));
-    };
-
-    const handleCreateKey = () => {
-        const newKey: ApiKey = {
-            id: `key_${Date.now()}`,
-            name: 'New Key',
-            prefix: 'pk_live_...',
-            created: new Date().toISOString().split('T')[0],
-            lastUsed: 'Never'
-        };
-        setApiKeys([...apiKeys, newKey]);
-    };
-
-    const copyToClipboard = (text: string, id: string) => {
-        navigator.clipboard.writeText(text);
-        setCopiedKey(id);
-        setTimeout(() => setCopiedKey(null), 2000);
-    };
-
-    // --- Render Functions for Tabs ---
+    // --- Render Functions ---
 
     const renderAccountTab = () => (
-        <div className="space-y-6 animate-fade-in">
-            <div className="flex items-start justify-between">
-                <div>
-                    <h2 className="text-xl font-bold text-white">Personal Profile</h2>
-                    <p className="text-sm text-zinc-400">Manage your personal information and login credentials.</p>
+        <div className="space-y-8 animate-fade-in">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="w-20 h-20 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-3xl font-bold text-zinc-400">
+                    {userProfile?.name?.charAt(0) || 'U'}
                 </div>
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-xl border-2 border-zinc-900">
-                    {userProfile?.name.charAt(0)}
+                <div>
+                    <h2 className="text-2xl font-bold text-white">{userProfile?.name}</h2>
+                    <p className="text-zinc-400">{userProfile?.email}</p>
+                    <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-medium border border-indigo-500/20">
+                        {userProfile?.plan || 'Free'} Plan
+                    </span>
                 </div>
             </div>
 
-            <Card className="p-6 bg-zinc-900 border-white/10 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input label="Full Name" defaultValue={userProfile?.name} className="bg-zinc-950 border-white/10" />
-                    <Input label="Email Address" defaultValue={userProfile?.email} disabled className="bg-zinc-950 border-white/10 opacity-60" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Language</label>
-                        <select 
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value as any)}
-                            className="w-full bg-zinc-950 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm"
-                        >
-                            <option value="en">English (US)</option>
-                            <option value="ar">Arabic (العربية)</option>
-                        </select>
+            <div className="grid gap-6">
+                <Card className="p-6 bg-zinc-900/50 border-white/5">
+                    <h3 className="text-lg font-medium text-white mb-4">Profile Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input label="Display Name" defaultValue={userProfile?.name} className="bg-zinc-950 border-white/10" />
+                        <Input label="Email Address" defaultValue={userProfile?.email} disabled className="bg-zinc-950 border-white/10 opacity-60 cursor-not-allowed" />
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Timezone</label>
-                        <select className="w-full bg-zinc-950 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm">
-                            <option>UTC (Coordinated Universal Time)</option>
-                            <option>EST (Eastern Standard Time)</option>
-                            <option>PST (Pacific Standard Time)</option>
-                        </select>
-                    </div>
-                </div>
-                <div className="flex justify-end pt-4">
-                    <Button>Save Changes</Button>
-                </div>
-            </Card>
+                </Card>
 
-            <Card className="p-6 bg-zinc-900 border-white/10 border-l-4 border-l-red-500">
-                <div className="flex items-start justify-between">
-                    <div>
-                        <h3 className="text-white font-bold">Danger Zone</h3>
-                        <p className="text-sm text-zinc-400 mt-1">Irreversible actions. Proceed with caution.</p>
+                <Card className="p-6 bg-zinc-900/50 border-white/5">
+                    <h3 className="text-lg font-medium text-white mb-4">Preferences</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Language</label>
+                            <select 
+                                value={language}
+                                onChange={(e) => setLanguage(e.target.value as any)}
+                                className="w-full bg-zinc-950 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                            >
+                                <option value="en">English (United States)</option>
+                                <option value="ar">Arabic (العربية)</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Timezone</label>
+                            <div className="px-4 py-2.5 bg-zinc-950 border border-white/10 rounded-lg text-sm text-zinc-400">
+                                {Intl.DateTimeFormat().resolvedOptions().timeZone} (Auto-detected)
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-zinc-200">Delete Account</p>
-                        <p className="text-xs text-zinc-500">Permanently remove your account and all data.</p>
+                </Card>
+
+                <Card className="p-6 bg-red-900/5 border-red-500/10">
+                    <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
+                    <p className="text-sm text-red-300/60 mb-6">Permanently delete your account and all of your content.</p>
+                    <div className="flex justify-end">
+                        <Button variant="danger" size="sm" onClick={logout}>Delete Account</Button>
                     </div>
-                    <Button variant="danger" size="sm" onClick={logout}>Delete Account</Button>
-                </div>
-            </Card>
+                </Card>
+            </div>
         </div>
     );
 
     const renderBillingTab = () => (
         <div className="space-y-8 animate-fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Usage Card */}
-                <Card className="lg:col-span-2 p-6 bg-gradient-to-br from-indigo-900/20 to-zinc-900 border-indigo-500/30 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full"></div>
-                    <div className="relative z-10 flex justify-between items-start">
+            {/* Current Plan Status */}
+            <Card className="p-8 bg-gradient-to-r from-indigo-900/20 to-zinc-900 border-white/10 relative overflow-hidden">
+                <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-6">
                         <div>
-                            <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-1">Current Plan</h3>
-                            <h2 className="text-3xl font-display font-bold text-white mb-4">{userProfile?.plan || 'Pro'} Plan</h2>
-                            <div className="flex items-center gap-2 text-sm text-zinc-300">
-                                <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
-                                <span>Renews on Nov 1, 2024</span>
+                            <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-2">Current Subscription</h3>
+                            <div className="flex items-baseline gap-2">
+                                <h2 className="text-4xl font-display font-bold text-white">{userProfile?.plan || 'Starter'}</h2>
+                                <span className="text-zinc-400">/ month</span>
                             </div>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <div className="text-right mb-2">
-                                <span className="text-2xl font-bold text-white">450</span>
-                                <span className="text-zinc-500 text-sm"> / 1000 Credits</span>
-                            </div>
-                            <div className="w-32 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                <div className="h-full w-[45%] bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                            </div>
+                        <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-500/20 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            Active
                         </div>
                     </div>
-                </Card>
-
-                {/* Payment Method */}
-                <Card className="p-6 bg-zinc-900 border-white/10 flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Payment Method</h3>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-6 bg-white rounded flex items-center justify-center">
-                                <div className="w-3 h-3 rounded-full bg-red-500 -mr-1 opacity-80"></div>
-                                <div className="w-3 h-3 rounded-full bg-orange-500 opacity-80"></div>
-                            </div>
-                            <span className="text-white font-mono text-sm">•••• 4242</span>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-white/10 pt-6">
+                        <div>
+                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Next Billing Date</p>
+                            <p className="text-white font-medium">November 1, 2024</p>
                         </div>
-                        <p className="text-xs text-zinc-500">Expires 12/25</p>
+                        <div>
+                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Payment Method</p>
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-5 bg-white rounded flex items-center justify-center px-1">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full opacity-80 -mr-0.5"></div>
+                                    <div className="w-2 h-2 bg-orange-500 rounded-full opacity-80"></div>
+                                </div>
+                                <p className="text-white font-medium">•••• 4242</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total Spent</p>
+                            <p className="text-white font-medium">$298.00</p>
+                        </div>
                     </div>
-                    <Button variant="outline" size="sm" className="mt-4">Update Card</Button>
-                </Card>
-            </div>
+                </div>
+            </Card>
 
-            {/* Plans Grid */}
+            {/* Plan Options */}
             <div>
                 <h3 className="text-lg font-bold text-white mb-4">Available Plans</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {PRICING_PLANS.map((plan) => {
                         const isCurrent = userProfile?.plan === plan.name;
                         return (
-                            <div key={plan.name} className={`p-5 rounded-xl border flex flex-col ${isCurrent ? 'bg-indigo-900/10 border-indigo-500/50' : 'bg-zinc-900 border-white/5'}`}>
+                            <div key={plan.name} className={`p-6 rounded-xl border flex flex-col transition-all duration-300 ${isCurrent ? 'bg-zinc-900 border-indigo-500 ring-1 ring-indigo-500/20' : 'bg-zinc-900/30 border-white/5 hover:border-white/10'}`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
-                                        <h4 className="font-bold text-white">{plan.name}</h4>
+                                        <h4 className="font-bold text-white text-lg">{plan.name}</h4>
                                         <p className="text-xs text-zinc-500 mt-1">{plan.description}</p>
                                     </div>
-                                    {isCurrent && <span className="px-2 py-1 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
+                                    {isCurrent && <CheckCircleIcon className="w-6 h-6 text-indigo-500" />}
                                 </div>
                                 <div className="mb-6">
-                                    <span className="text-2xl font-bold text-white">{plan.price}</span>
+                                    <span className="text-3xl font-bold text-white">{plan.price}</span>
                                     <span className="text-xs text-zinc-500">{plan.frequency}</span>
                                 </div>
+                                <ul className="space-y-3 mb-8 flex-1">
+                                    {plan.features.map((feat, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-sm text-zinc-400">
+                                            <CheckCircleIcon className="w-4 h-4 text-zinc-600 mt-0.5 flex-shrink-0" />
+                                            {feat}
+                                        </li>
+                                    ))}
+                                </ul>
                                 <Button 
-                                    variant={isCurrent ? 'secondary' : 'primary'} 
+                                    variant={isCurrent ? 'outline' : 'primary'} 
                                     disabled={isCurrent}
-                                    className="w-full justify-center mt-auto"
+                                    className="w-full justify-center"
                                 >
-                                    {isCurrent ? 'Active Plan' : plan.name === 'Enterprise' ? 'Contact Sales' : 'Upgrade'}
+                                    {isCurrent ? 'Current Plan' : 'Upgrade'}
                                 </Button>
                             </div>
                         );
@@ -286,8 +247,8 @@ const SettingsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Invoice History */}
-            <Card className="p-0 bg-zinc-900 border-white/10 overflow-hidden">
+             {/* Invoice History (Static for Demo but realistic structure) */}
+             <Card className="p-0 bg-zinc-900/50 border-white/5 overflow-hidden">
                 <div className="p-6 border-b border-white/5">
                     <h3 className="font-bold text-white">Billing History</h3>
                 </div>
@@ -295,33 +256,28 @@ const SettingsPage: React.FC = () => {
                     <table className="w-full text-left text-sm text-zinc-400">
                         <thead className="bg-zinc-950/50 text-xs uppercase font-medium text-zinc-500">
                             <tr>
-                                <th className="px-6 py-3">Invoice ID</th>
+                                <th className="px-6 py-3">Invoice</th>
                                 <th className="px-6 py-3">Date</th>
-                                <th className="px-6 py-3">Plan</th>
                                 <th className="px-6 py-3">Amount</th>
                                 <th className="px-6 py-3">Status</th>
                                 <th className="px-6 py-3 text-right">Download</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {MOCK_INVOICES.map((inv) => (
-                                <tr key={inv.id} className="hover:bg-white/5 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-white">{inv.id}</td>
-                                    <td className="px-6 py-4">{inv.date}</td>
-                                    <td className="px-6 py-4">{inv.plan}</td>
-                                    <td className="px-6 py-4 text-white">{inv.amount}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                                            {inv.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button className="text-zinc-500 hover:text-white transition-colors">
-                                            <ArrowDownTrayIcon className="w-4 h-4" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            <tr className="hover:bg-white/5 transition-colors">
+                                <td className="px-6 py-4 font-mono text-zinc-300">INV-2024-001</td>
+                                <td className="px-6 py-4">Oct 1, 2024</td>
+                                <td className="px-6 py-4 text-white">$99.00</td>
+                                <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] border border-emerald-500/20 font-bold">Paid</span></td>
+                                <td className="px-6 py-4 text-right"><button className="hover:text-white"><ArrowDownTrayIcon className="w-4 h-4" /></button></td>
+                            </tr>
+                             <tr className="hover:bg-white/5 transition-colors">
+                                <td className="px-6 py-4 font-mono text-zinc-300">INV-2024-002</td>
+                                <td className="px-6 py-4">Sep 1, 2024</td>
+                                <td className="px-6 py-4 text-white">$99.00</td>
+                                <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] border border-emerald-500/20 font-bold">Paid</span></td>
+                                <td className="px-6 py-4 text-right"><button className="hover:text-white"><ArrowDownTrayIcon className="w-4 h-4" /></button></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -333,152 +289,70 @@ const SettingsPage: React.FC = () => {
         <div className="space-y-6 animate-fade-in">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-xl font-bold text-white">Team Members</h2>
-                    <p className="text-sm text-zinc-400">Manage access and roles for your workspace.</p>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-900/20 border border-indigo-500/30 rounded-lg text-indigo-300 text-xs font-medium">
-                    <UsersIcon className="w-4 h-4" />
-                    <span>{team.length} / 5 Seats Used</span>
+                    <h2 className="text-xl font-bold text-white">Team Management</h2>
+                    <p className="text-sm text-zinc-400">Collaborate with your organization.</p>
                 </div>
             </div>
 
             {/* Invite Bar */}
-            <Card className="p-4 bg-zinc-900 border-white/10">
+            <Card className="p-4 bg-zinc-900/50 border-white/5">
                 <form onSubmit={handleInvite} className="flex gap-4 items-end">
                     <div className="flex-1">
                          <Input 
-                            label="Invite by Email" 
+                            label="Email Address" 
                             placeholder="colleague@company.com" 
                             value={inviteEmail}
                             onChange={e => setInviteEmail(e.target.value)}
                             className="bg-zinc-950 border-white/10"
                         />
                     </div>
-                    <div className="w-40">
+                    <div className="w-32">
                         <label className="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wider">Role</label>
-                        <select className="w-full bg-zinc-950 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm">
-                            <option>Editor</option>
-                            <option>Viewer</option>
-                            <option>Admin</option>
-                        </select>
+                        <div className="h-[42px] px-3 bg-zinc-950 border border-white/10 rounded-lg flex items-center text-sm text-zinc-400 cursor-not-allowed">
+                            Viewer
+                        </div>
                     </div>
-                    <Button type="submit" disabled={!inviteEmail} leftIcon={<PlusIcon className="w-4 h-4"/>}>
+                    <Button type="submit" disabled={!inviteEmail} leftIcon={<EnvelopeIcon className="w-4 h-4"/>}>
                         Invite
                     </Button>
                 </form>
             </Card>
 
             {/* Member List */}
-            <div className="space-y-3">
-                {team.map(member => (
-                    <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-900 border border-white/5 rounded-xl group hover:border-white/10 transition-all">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400 border border-white/5">
-                                {member.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-bold text-white">{member.name}</h4>
-                                <p className="text-xs text-zinc-500">{member.email}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${member.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                                 {member.status}
-                             </span>
-                             <select 
-                                defaultValue={member.role}
-                                className="bg-transparent text-sm text-zinc-300 font-medium focus:text-white outline-none cursor-pointer"
-                             >
-                                 <option>Admin</option>
-                                 <option>Editor</option>
-                                 <option>Viewer</option>
-                             </select>
-                             <button 
-                                className="text-zinc-600 hover:text-red-400 transition-colors p-2" 
-                                title="Remove Member"
-                                onClick={() => setTeam(team.filter(t => t.id !== member.id))}
-                            >
-                                 <TrashIcon className="w-4 h-4" />
-                             </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    const renderApiTab = () => (
-        <div className="space-y-6 animate-fade-in">
-             <div className="flex justify-between items-start">
-                <div>
-                    <h2 className="text-xl font-bold text-white">API & Integrations</h2>
-                    <p className="text-sm text-zinc-400">Manage API keys and external connections.</p>
-                </div>
-                <Button onClick={handleCreateKey} leftIcon={<PlusIcon className="w-4 h-4"/>}>Create New Key</Button>
-            </div>
-
-            <Card className="p-0 bg-zinc-900 border-white/10 overflow-hidden">
-                <div className="p-6 border-b border-white/5 bg-white/5 flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
-                        <KeyIcon className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-white text-sm">Active API Keys</h3>
-                        <p className="text-xs text-zinc-400">Do not share these keys with anyone.</p>
-                    </div>
-                </div>
+            <Card className="p-0 bg-zinc-900/50 border-white/5 overflow-hidden">
                 <div className="divide-y divide-white/5">
-                    {apiKeys.map(key => (
-                        <div key={key.id} className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
-                            <div>
-                                <h4 className="text-sm font-bold text-white mb-1">{key.name}</h4>
-                                <div className="flex items-center gap-3">
-                                    <code className="bg-black px-2 py-1 rounded text-xs font-mono text-zinc-400 border border-white/10">
-                                        {key.prefix}************************
-                                    </code>
-                                    <span className="text-[10px] text-zinc-600">Created: {key.created}</span>
+                    {team.map(member => (
+                        <div key={member.id} className="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400 border border-white/5">
+                                    {member.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-white">{member.name} {member.id === 'current-user' && <span className="text-zinc-500 font-normal">(You)</span>}</h4>
+                                    <p className="text-xs text-zinc-500">{member.email}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Button 
-                                    size="sm" 
-                                    variant="secondary" 
-                                    onClick={() => copyToClipboard(key.prefix + 'xyz123', key.id)}
-                                    className={copiedKey === key.id ? 'text-emerald-400 border-emerald-500/30' : ''}
-                                >
-                                    {copiedKey === key.id ? <CheckIcon className="w-4 h-4" /> : <DocumentDuplicateIcon className="w-4 h-4" />}
-                                </Button>
-                                <Button size="sm" variant="danger" onClick={() => handleDeleteKey(key.id)}>Revoke</Button>
+                            <div className="flex items-center gap-6">
+                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${member.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                                     {member.status}
+                                 </span>
+                                 <span className="text-sm text-zinc-300 font-medium w-16 text-right">
+                                     {member.role}
+                                 </span>
+                                 <div className="w-8">
+                                     {member.role !== 'Owner' && (
+                                        <button 
+                                            className="text-zinc-600 hover:text-red-400 transition-colors p-2" 
+                                            title="Remove Member"
+                                            onClick={() => setTeam(team.filter(t => t.id !== member.id))}
+                                        >
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                     )}
+                                 </div>
                             </div>
                         </div>
                     ))}
-                    {apiKeys.length === 0 && (
-                        <div className="p-8 text-center text-zinc-500 text-sm">No active API keys.</div>
-                    )}
-                </div>
-            </Card>
-
-            <Card className="p-6 bg-zinc-900 border-white/10">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
-                        <CommandLineIcon className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-white text-sm">Webhooks</h3>
-                        <p className="text-xs text-zinc-400">Receive real-time updates for generation events.</p>
-                    </div>
-                </div>
-                <div className="grid gap-4">
-                     <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5">
-                         <div className="flex items-center gap-3">
-                             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                             <span className="text-sm text-zinc-300 font-mono">https://api.yourdomain.com/webhooks/marketing-ai</span>
-                         </div>
-                         <Button size="sm" variant="outline">Configure</Button>
-                     </div>
-                     <Button variant="secondary" className="w-full border-dashed border-white/10 hover:border-white/20">
-                         <PlusIcon className="w-4 h-4 mr-2" /> Add Endpoint
-                     </Button>
                 </div>
             </Card>
         </div>
@@ -486,44 +360,44 @@ const SettingsPage: React.FC = () => {
 
     const renderNotificationsTab = () => (
         <div className="space-y-6 animate-fade-in">
-             <div>
-                <h2 className="text-xl font-bold text-white">Notifications</h2>
-                <p className="text-sm text-zinc-400">Choose what you want to be notified about.</p>
+             <div className="mb-6">
+                <h2 className="text-xl font-bold text-white">Notification Settings</h2>
+                <p className="text-sm text-zinc-400">Manage your email preferences.</p>
             </div>
             
-            <Card className="divide-y divide-white/5 bg-zinc-900 border-white/10">
-                <div className="p-4 flex items-center justify-between">
+            <Card className="divide-y divide-white/5 bg-zinc-900/50 border-white/5">
+                <div className="p-6 flex items-center justify-between">
                     <div className="flex gap-4">
-                        <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 h-fit">
-                            <BellIcon className="w-5 h-5" />
+                        <div className="p-2.5 bg-zinc-800 rounded-xl text-zinc-400 h-fit">
+                            <BellIcon className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-white">Product Updates</p>
-                            <p className="text-xs text-zinc-500">News about new features and improvements.</p>
+                            <p className="text-base font-bold text-white">Product Updates</p>
+                            <p className="text-sm text-zinc-500">Receive news about new features and improvements.</p>
                         </div>
                     </div>
                     <Toggle id="n1" label="" enabled={notifUpdates} onChange={setNotifUpdates} />
                 </div>
-                <div className="p-4 flex items-center justify-between">
+                <div className="p-6 flex items-center justify-between">
                     <div className="flex gap-4">
-                        <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400 h-fit">
-                            <CheckCircleIcon className="w-5 h-5" />
+                        <div className="p-2.5 bg-zinc-800 rounded-xl text-zinc-400 h-fit">
+                            <CheckCircleIcon className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-white">Marketing Tips</p>
-                            <p className="text-xs text-zinc-500">Weekly AI strategies and prompts.</p>
+                            <p className="text-base font-bold text-white">Marketing Tips</p>
+                            <p className="text-sm text-zinc-500">Weekly AI strategies and prompts to improve your workflow.</p>
                         </div>
                     </div>
                     <Toggle id="n2" label="" enabled={notifMarketing} onChange={setNotifMarketing} />
                 </div>
-                 <div className="p-4 flex items-center justify-between">
+                 <div className="p-6 flex items-center justify-between">
                     <div className="flex gap-4">
-                        <div className="p-2 bg-red-500/10 rounded-lg text-red-400 h-fit">
-                            <ExclamationTriangleIcon className="w-5 h-5" />
+                        <div className="p-2.5 bg-zinc-800 rounded-xl text-zinc-400 h-fit">
+                            <ExclamationTriangleIcon className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-white">Security Alerts</p>
-                            <p className="text-xs text-zinc-500">Critical alerts about your account security.</p>
+                            <p className="text-base font-bold text-white">Security Alerts</p>
+                            <p className="text-sm text-zinc-500">Critical alerts about your account security (Always on).</p>
                         </div>
                     </div>
                     <Toggle id="n3" label="" enabled={notifSecurity} onChange={setNotifSecurity} />
@@ -533,7 +407,7 @@ const SettingsPage: React.FC = () => {
     );
 
     return (
-        <div className="max-w-7xl mx-auto pb-20 h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-8 animate-fade-in">
+        <div className="max-w-6xl mx-auto pb-20 h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-8 animate-fade-in">
             
             {/* Sidebar Navigation */}
             <div className="w-full lg:w-64 flex-shrink-0 space-y-2">
@@ -542,37 +416,35 @@ const SettingsPage: React.FC = () => {
                     active={activeTab === 'account'} 
                     onClick={() => setActiveTab('account')} 
                     icon={<UserCircleIcon className="w-5 h-5"/>} 
-                    label="My Account" 
+                    label="General" 
+                    description="Profile & preferences"
                 />
                 <TabButton 
                     active={activeTab === 'billing'} 
                     onClick={() => setActiveTab('billing')} 
                     icon={<CreditCardIcon className="w-5 h-5"/>} 
-                    label="Billing & Plans" 
+                    label="Billing" 
+                    description="Plan & history"
                 />
                 <TabButton 
                     active={activeTab === 'team'} 
                     onClick={() => setActiveTab('team')} 
                     icon={<UsersIcon className="w-5 h-5"/>} 
-                    label="Team Members" 
+                    label="Team" 
+                    description="Members & roles"
                 />
                 <TabButton 
                     active={activeTab === 'notifications'} 
                     onClick={() => setActiveTab('notifications')} 
                     icon={<BellIcon className="w-5 h-5"/>} 
                     label="Notifications" 
-                />
-                <TabButton 
-                    active={activeTab === 'api'} 
-                    onClick={() => setActiveTab('api')} 
-                    icon={<CommandLineIcon className="w-5 h-5"/>} 
-                    label="API & Integrations" 
+                    description="Email settings"
                 />
                 
                 <div className="pt-8 px-3">
                      <button 
                         onClick={logout}
-                        className="flex items-center gap-3 text-sm font-medium text-zinc-500 hover:text-red-400 transition-colors"
+                        className="flex items-center gap-3 text-sm font-medium text-zinc-500 hover:text-white transition-colors w-full p-2 rounded-lg hover:bg-white/5"
                      >
                          <ArrowRightOnRectangleIcon className="w-5 h-5" />
                          Sign Out
@@ -581,14 +453,12 @@ const SettingsPage: React.FC = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 bg-[#09090b] border border-white/5 rounded-2xl p-8 lg:overflow-y-auto custom-scrollbar shadow-2xl relative">
-                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+            <div className="flex-1 rounded-2xl lg:overflow-y-auto custom-scrollbar relative">
                  <div className="relative z-10">
                     {activeTab === 'account' && renderAccountTab()}
                     {activeTab === 'billing' && renderBillingTab()}
                     {activeTab === 'team' && renderTeamTab()}
                     {activeTab === 'notifications' && renderNotificationsTab()}
-                    {activeTab === 'api' && renderApiTab()}
                  </div>
             </div>
         </div>
