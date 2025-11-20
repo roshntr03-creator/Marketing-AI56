@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Modality, LiveServerMessage } from "@google/genai";
 import { BrandProfile, CampaignBlueprint, CompetitorAnalysisReport, EnhancedPrompt, SocialPost, CoachMessage } from '../types';
 
@@ -16,6 +15,38 @@ export const ensureVeoKey = async (): Promise<void> => {
         if (!hasKey) {
             // @ts-ignore
             await window.aistudio.openSelectKey();
+        }
+    }
+};
+
+// Helper for Kie AI Tasks
+const runKieTask = async (model: string, input: any) => {
+    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${KIE_API_KEY}`
+        },
+        body: JSON.stringify({
+            model,
+            input
+        })
+    });
+
+    const createData = await createRes.json();
+    if (createData.code !== 200) throw new Error(createData.msg || 'Failed to start generation');
+    const taskId = createData.data.taskId;
+
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+            headers: { 'Authorization': `Bearer ${KIE_API_KEY}` }
+        });
+        const statusData = await statusRes.json();
+        if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Generation failed');
+        if (statusData.data.state === 'success') {
+             const resultJson = JSON.parse(statusData.data.resultJson);
+             return resultJson.resultUrls?.[0] || '';
         }
     }
 };
@@ -46,7 +77,7 @@ const aiService = {
     return JSON.parse(response.text || '{}');
   },
 
-  generateUGCScript: async (imageFile: File, duration: string, brandProfile?: BrandProfile): Promise<{ script: string; interactionStyles: string[]; visualDescription: string }> => {
+  generateUGCScript: async (imageFile: File, duration: string, brandProfile?: BrandProfile): Promise<{ hook: string; body: string; cta: string; visualDescription: string }> => {
     const ai = createAI();
     
     const base64Data = await new Promise<string>((resolve) => {
@@ -58,14 +89,15 @@ const aiService = {
         reader.readAsDataURL(imageFile);
     });
 
-    const prompt = `Create a UGC (User Generated Content) video script for TikTok/Reels based on this product image. 
+    const prompt = `Create a structured UGC (User Generated Content) video script for TikTok/Reels based on this product image. 
     Target Video Duration: ${duration}.
     Brand Context: ${brandProfile ? JSON.stringify(brandProfile) : 'N/A'}.
     
     REQUIREMENTS:
-    1. The script must be perfectly timed for ${duration} (approx 2-3 words per second).
-    2. It should be natural, engaging, and sound like a real user recommendation.
-    3. Also provide a detailed "visualDescription" of the image (subject, lighting, setting) to be used as a video generation prompt.`;
+    1. Split the script into 3 distinct parts: Hook (0-3s), Body (Benefits/Features), and CTA (Call to Action).
+    2. Total word count should fit ${duration} (approx 2.5 words per second).
+    3. Tone: Authentic, enthusiastic, peer-to-peer.
+    4. visualDescription: A detailed prompt for an AI video generator describing the actor, setting, and action matching the script.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -80,10 +112,12 @@ const aiService = {
         responseSchema: {
             type: Type.OBJECT,
             properties: {
-                script: { type: Type.STRING },
-                interactionStyles: { type: Type.ARRAY, items: { type: Type.STRING } },
-                visualDescription: { type: Type.STRING }
-            }
+                hook: { type: Type.STRING, description: "The opening line to grab attention (first 3 seconds)." },
+                body: { type: Type.STRING, description: "The main value proposition or demonstration." },
+                cta: { type: Type.STRING, description: "The closing call to action." },
+                visualDescription: { type: Type.STRING, description: "Detailed visual prompt for the video generation model." }
+            },
+            required: ["hook", "body", "cta", "visualDescription"]
         }
       }
     });
@@ -111,158 +145,144 @@ const aiService = {
   },
 
   generateUGCVideo: async (params: any): Promise<string> => {
-    const scriptContent = Array.isArray(params.script) ? params.script.join(' ') : params.script;
+    // Combine structured script if present, else fall back to legacy 'script' param
+    const fullScript = params.scriptHook ? `${params.scriptHook} ${params.scriptBody} ${params.scriptCTA}` : params.script;
     
     const prompt = `
     TYPE: UGC Social Media Video (TikTok/Reels)
     FORMAT: Vertical 9:16
     DURATION: ${params.videoLength}
     
-    VISUAL SCENE DESCRIPTION:
+    VISUAL SCENE:
     ${params.videoPrompt || 'A user holding the product in a natural setting.'}
     
-    ATMOSPHERE & STYLE:
-    - Vibe: ${params.vibe}
-    - Setting: ${params.setting}
-    - Character: ${params.gender}
-    - Action: ${params.selectedInteraction}
+    CASTING:
+    - Actor Description: ${params.avatarDescription || 'Authentic UGC creator'}
+    - Environment: ${params.setting}
     
     SCRIPT CONTEXT (For lip-sync/timing):
-    "${scriptContent}"
+    "${fullScript}"
     
-    TECHNICAL REQUIREMENTS:
-    - High resolution, realistic lighting, 4k.
-    - Natural camera movement consistent with UGC.
+    TECHNICAL:
+    - 4k resolution, realistic texture.
+    - Handheld camera shake (subtle).
+    - Good lighting but natural shadow falloff.
     `;
     
+    // Handle Sora 2 duration logic (10s or 15s)
     let n_frames = '10';
-    if (params.videoLength.includes('15') || params.videoLength.includes('30') || params.videoLength.includes('60')) {
+    if (params.videoLength.includes('15')) {
         n_frames = '15';
     }
 
-    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${KIE_API_KEY}`
-        },
-        body: JSON.stringify({
-            model: 'sora-2-text-to-video',
-            input: {
-                prompt: prompt,
-                aspect_ratio: 'portrait',
-                n_frames: n_frames,
-                remove_watermark: true
-            }
-        })
+    const model = params.model || 'sora-2-text-to-video';
+
+    return runKieTask(model, {
+        prompt: prompt,
+        aspect_ratio: 'portrait',
+        n_frames: n_frames,
+        remove_watermark: true
     });
-
-    const createData = await createRes.json();
-    if (createData.code !== 200) throw new Error(createData.msg || 'Failed to start video generation');
-    const taskId = createData.data.taskId;
-
-    while (true) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-            headers: { 'Authorization': `Bearer ${KIE_API_KEY}` }
-        });
-        const statusData = await statusRes.json();
-        if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Video generation failed');
-        if (statusData.data.state === 'success') {
-             const resultJson = JSON.parse(statusData.data.resultJson);
-             return resultJson.resultUrls?.[0] || '';
-        }
-    }
   },
 
   generatePromoVideo: async (params: any): Promise<string> => {
-    const finalPrompt = params.style ? `${params.prompt}. Style: ${params.style}` : params.prompt;
+    const model = params.model || 'sora-2-text-to-video';
+    
+    // Construct sophisticated prompt with camera precision
+    let finalPrompt = params.prompt;
+    
+    if (params.style) {
+        finalPrompt += `. Aesthetic Style: ${params.style}`;
+    }
+    
+    // Precision Camera Controls
+    if (params.camera) {
+        const { zoom, pan, tilt } = params.camera;
+        const moves = [];
+        if (zoom && zoom !== 'None') moves.push(`Camera Zoom: ${zoom}`);
+        if (pan && pan !== 'None') moves.push(`Camera Pan: ${pan}`);
+        if (tilt && tilt !== 'None') moves.push(`Camera Tilt: ${tilt}`);
+        
+        if (moves.length > 0) {
+            finalPrompt += `. Cinematography: ${moves.join(', ')}. Smooth, professional movement.`;
+        }
+    }
+
+    // Grok Video Logic (Fixed duration ~6s based on capabilities)
+    if (model === 'grok-imagine/text-to-video') {
+         let grokAr = '1:1';
+         if (params.aspectRatio === '16:9') grokAr = '3:2';
+         if (params.aspectRatio === '9:16') grokAr = '2:3';
+         
+         return runKieTask(model, {
+             prompt: finalPrompt,
+             aspect_ratio: grokAr,
+             mode: 'normal',
+         });
+    }
+
+    // Sora Logic (10s or 15s)
     const ar = params.aspectRatio === '9:16' ? 'portrait' : params.aspectRatio === '1:1' ? 'square' : 'landscape';
     const n_frames = params.duration === '15s' ? '15' : '10';
 
-    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${KIE_API_KEY}`
-        },
-        body: JSON.stringify({
-            model: 'sora-2-text-to-video',
-            input: {
-                prompt: finalPrompt,
-                aspect_ratio: ar,
-                n_frames: n_frames,
-                remove_watermark: true
-            }
-        })
+    return runKieTask(model, {
+        prompt: finalPrompt,
+        negative_prompt: params.negativePrompt || "blur, distortion, watermark, text, low quality, ugly, bad hands",
+        aspect_ratio: ar,
+        n_frames: n_frames,
+        remove_watermark: true,
+        seed: params.seed ? parseInt(params.seed) : undefined
     });
-
-    const createData = await createRes.json();
-    if (createData.code !== 200) throw new Error(createData.msg || 'Failed to start video generation');
-    const taskId = createData.data.taskId;
-
-    while (true) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-            headers: { 'Authorization': `Bearer ${KIE_API_KEY}` }
-        });
-        const statusData = await statusRes.json();
-        if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Video generation failed');
-        if (statusData.data.state === 'success') {
-             const resultJson = JSON.parse(statusData.data.resultJson);
-             return resultJson.resultUrls?.[0] || '';
-        }
-    }
   },
 
-  // Updated to use Seedream V4 via Kie AI
-  generateImage: async (prompt: string, aspectRatio: string): Promise<string> => {
-    // Map app aspect ratios to Seedream format
-    const sizeMap: Record<string, string> = {
-        '1:1': 'square_hd',
-        '16:9': 'landscape_16_9',
-        '9:16': 'portrait_16_9',
-        '4:3': 'landscape_4_3',
-        '3:4': 'portrait_4_3',
-    };
-    const imageSize = sizeMap[aspectRatio] || 'square_hd';
+  // Mock function to simulate video editing/rendering
+  exportVideoWithEdits: async (originalUrl: string, edits: any): Promise<string> => {
+      // In a real backend, this would send the timeline data, overlays, and filters to a render server.
+      // For now, we simulate a "rendering" delay and return the original (or a modified mock).
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return originalUrl; // Just passing through for demo
+  },
 
-    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${KIE_API_KEY}`
-        },
-        body: JSON.stringify({
-            model: 'bytedance/seedream-v4-text-to-image',
-            input: {
-                prompt: prompt,
-                image_size: imageSize,
-                image_resolution: '2K',
-                max_images: 1,
-                seed: Math.floor(Math.random() * 1000000)
-            }
-        })
-    });
-
-    const createData = await createRes.json();
-    if (createData.code !== 200) throw new Error(createData.msg || 'Failed to start image generation');
-    const taskId = createData.data.taskId;
-
-    // Polling for completion
-    while (true) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-            headers: { 'Authorization': `Bearer ${KIE_API_KEY}` }
-        });
-        const statusData = await statusRes.json();
-        
-        if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Image generation failed');
-        if (statusData.data.state === 'success') {
-             const resultJson = JSON.parse(statusData.data.resultJson);
-             return resultJson.resultUrls?.[0] || '';
-        }
+  generateImage: async (prompt: string, aspectRatio: string, model: string = 'bytedance/seedream-v4-text-to-image'): Promise<string> => {
+    // 1. Gemini Flash
+    if (model === 'gemini-2.5-flash-image') {
+        return aiService.generateFastImage(prompt);
     }
+
+    // 2. Grok Imagine
+    if (model === 'grok-imagine/text-to-image') {
+        let ar = '1:1';
+        // Grok only supports 2:3, 3:2, 1:1
+        if (aspectRatio === '16:9' || aspectRatio === '4:3') ar = '3:2';
+        if (aspectRatio === '9:16' || aspectRatio === '3:4') ar = '2:3';
+        
+        return runKieTask(model, {
+            prompt,
+            aspect_ratio: ar
+        });
+    }
+
+    // 3. Seedream v4 (Default Fallback)
+    if (model === 'bytedance/seedream-v4-text-to-image') {
+        const sizeMap: Record<string, string> = {
+            '1:1': 'square_hd',
+            '16:9': 'landscape_16_9',
+            '9:16': 'portrait_16_9',
+            '4:3': 'landscape_4_3',
+            '3:4': 'portrait_4_3',
+        };
+        const imageSize = sizeMap[aspectRatio] || 'square_hd';
+        
+        return runKieTask(model, {
+            prompt,
+            image_size: imageSize,
+            image_resolution: '2K',
+            max_images: 1,
+            seed: Math.floor(Math.random() * 1000000)
+        });
+    }
+
+    throw new Error("Unsupported model");
   },
 
   generateFastImage: async (prompt: string): Promise<string> => {

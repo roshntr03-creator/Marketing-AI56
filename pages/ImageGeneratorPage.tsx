@@ -15,8 +15,15 @@ import {
     ArrowDownTrayIcon,
     BoltIcon,
     ClockIcon,
-    PaintBrushIcon
+    PaintBrushIcon,
+    CpuChipIcon
 } from '@heroicons/react/24/outline';
+
+const MODELS = [
+    { id: 'grok-imagine/text-to-image', name: 'Grok 3 (Imagine)', desc: 'High realism, great prompt adherence' },
+    { id: 'bytedance/seedream-v4-text-to-image', name: 'Seedream v4', desc: 'Artistic styles and illustrations' },
+    { id: 'gemini-2.5-flash-image', name: 'Gemini Flash', desc: 'Fast, general purpose imagery' },
+];
 
 const STYLES = [
     { id: 'none', label: 'No Style', desc: 'Raw prompt interpretation', color: 'from-zinc-800 to-zinc-900' },
@@ -44,6 +51,7 @@ const ImageGeneratorPage: React.FC = () => {
     const [prompt, setPrompt] = useState('');
     const [aspectRatio, setAspectRatio] = useState('1:1');
     const [selectedStyle, setSelectedStyle] = useState(STYLES[0].id);
+    const [selectedModel, setSelectedModel] = useState(MODELS[0].id);
     
     // UI State
     const [isEnhancing, setIsEnhancing] = useState(false);
@@ -116,7 +124,7 @@ const ImageGeneratorPage: React.FC = () => {
             id: jobId,
             type: 'IMAGE',
             title: prompt.substring(0, 40),
-            params: { prompt: finalPrompt, aspectRatio },
+            params: { prompt: finalPrompt, aspectRatio, model: selectedModel },
             status: 'Pending'
         });
         
@@ -143,6 +151,25 @@ const ImageGeneratorPage: React.FC = () => {
                 {/* Scrollable Controls */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-zinc-900/20">
                     
+                    {/* Model Selection */}
+                    <div className="space-y-3">
+                         <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                            <CpuChipIcon className="w-3 h-3"/> AI Model
+                        </label>
+                        <div className="grid grid-cols-1 gap-2">
+                            {MODELS.map(m => (
+                                <button
+                                    key={m.id}
+                                    onClick={() => setSelectedModel(m.id)}
+                                    className={`text-left px-3 py-2 rounded-lg border text-sm transition-all ${selectedModel === m.id ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-zinc-950 border-white/5 text-zinc-400 hover:bg-zinc-900'}`}
+                                >
+                                    <span className="block font-semibold">{m.name}</span>
+                                    <span className="text-[10px] opacity-70">{m.desc}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Prompt Section */}
                     <div className="space-y-3">
                         <div className="flex justify-between items-end">
@@ -163,7 +190,7 @@ const ImageGeneratorPage: React.FC = () => {
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 placeholder="Describe your imagination..."
-                                rows={5}
+                                rows={4}
                                 className="relative bg-zinc-950 border-white/10 focus:border-indigo-500/50 resize-none shadow-inner p-4 rounded-xl text-sm leading-relaxed"
                             />
                         </div>
@@ -245,11 +272,18 @@ const ImageGeneratorPage: React.FC = () => {
                                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700"></div>
                                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700"></div>
                              </div>
-                             {displayedImage && (
-                                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                                    {isGenerating ? 'Processing...' : 'Render Preview'}
-                                </span>
-                             )}
+                             <div className="flex items-center gap-2">
+                                {displayedImage && (
+                                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                                        {isGenerating ? 'Processing...' : 'Render Preview'}
+                                    </span>
+                                )}
+                                {currentJob && (
+                                    <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded border border-white/5">
+                                        {MODELS.find(m => m.id === currentJob.params.model)?.name || 'AI Model'}
+                                    </span>
+                                )}
+                             </div>
                         </div>
                         {displayedImage && !isGenerating && (
                             <a href={displayedImage} download={`creation-${Date.now()}.png`}>

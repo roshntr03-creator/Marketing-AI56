@@ -92,26 +92,26 @@ const WorkflowBuilderPage: React.FC = () => {
     const [draggingNode, setDraggingNode] = useState<string | null>(null);
     const [isToolbarCollapsed, setIsToolbarCollapsed] = useState(false);
     
-    // Initial nodes moved to (450, 100) to avoid overlap with toolbar
+    // Initial nodes moved further right (x: 550) and down (y: 150) to avoid overlapping with the top-left toolbar
     const [nodes, setNodes] = useState<NodeData[]>([
         { 
-            id: 'n_model', type: 'MODEL_SELECT', x: 450, y: 100, title: 'Select Model', status: 'IDLE',
+            id: 'n_model', type: 'MODEL_SELECT', x: 550, y: 150, title: 'Select Model', status: 'IDLE',
             data: { prompt: 'A professional fashion model posing naturally, studio lighting', result: null } 
         },
         { 
-            id: 'n_scene', type: 'SCENE_GEN', x: 450, y: 500, title: 'Scene Generator', status: 'IDLE',
+            id: 'n_scene', type: 'SCENE_GEN', x: 550, y: 550, title: 'Scene Generator', status: 'IDLE',
             data: { prompt: 'A minimalist luxury marble podium, soft shadows, high key lighting', result: null } 
         },
         { 
-            id: 'n_product', type: 'PRODUCT_ASSET', x: 900, y: 300, title: 'Product Object', status: 'IDLE',
+            id: 'n_product', type: 'PRODUCT_ASSET', x: 1000, y: 350, title: 'Product Object', status: 'IDLE',
             data: { file: null, preview: null } 
         },
         { 
-            id: 'n_comp', type: 'COMPOSITOR', x: 1350, y: 300, title: 'Composition Engine', status: 'IDLE',
+            id: 'n_comp', type: 'COMPOSITOR', x: 1450, y: 350, title: 'Composition Engine', status: 'IDLE',
             data: { prompt: 'Place the product naturally in the scene, ensuring realistic shadows and lighting matches.', result: null } 
         },
         { 
-            id: 'n_video', type: 'VIDEO_GEN', x: 1800, y: 300, title: 'Video Result', status: 'IDLE',
+            id: 'n_video', type: 'VIDEO_GEN', x: 1900, y: 350, title: 'Video Result', status: 'IDLE',
             data: { prompt: 'Cinematic slow motion camera orbit around the product', result: null } 
         }
     ]);

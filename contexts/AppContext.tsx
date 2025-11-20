@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { BrandProfile, CreationJob, UserProfile, ChecklistState } from '../types';
 import { Language, TranslationKey, getTranslation } from '../utils/i18n';
@@ -138,7 +139,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 resultUrl = await aiService.generatePromoVideo(params);
             } 
             else if (pendingJob.type === 'IMAGE') {
-                resultUrl = await aiService.generateImage(params.prompt, params.aspectRatio);
+                // Pass model parameter from params
+                resultUrl = await aiService.generateImage(params.prompt, params.aspectRatio, params.model);
             } else if (pendingJob.type === 'CONTENT') {
                 resultText = await aiService.generateContent(params.contentType, params.topic, params.tone);
             }
