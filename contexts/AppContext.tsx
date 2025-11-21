@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { BrandProfile, CreationJob, UserProfile, ChecklistState } from '../types';
 import { Language, TranslationKey, getTranslation } from '../utils/i18n';
@@ -142,7 +141,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 // Pass model parameter from params
                 resultUrl = await aiService.generateImage(params.prompt, params.aspectRatio, params.model);
             } else if (pendingJob.type === 'CONTENT') {
-                resultText = await aiService.generateContent(params.contentType, params.topic, params.tone);
+                // Pass full params object for new signature
+                resultText = await aiService.generateContent({
+                    type: params.contentType,
+                    topic: params.topic,
+                    tone: params.tone,
+                    audience: params.audience,
+                    keywords: params.keywords,
+                    length: params.length,
+                    language: params.language
+                });
             }
 
             // Store result blob/url persistently

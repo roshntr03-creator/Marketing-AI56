@@ -11,12 +11,9 @@ import {
     XMarkIcon,
     MagnifyingGlassMinusIcon,
     MagnifyingGlassPlusIcon,
-    TrashIcon,
-    BoltIcon,
-    CursorArrowRaysIcon,
-    StopIcon,
     ExclamationTriangleIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    StopIcon
 } from '@heroicons/react/24/outline';
 import aiService from '../services/aiService';
 import { Input, Textarea } from '../components/ui/Input';
@@ -64,7 +61,6 @@ interface DragState {
     sourceNodeId?: string; // For Connecting
     sourceHandleId?: string;
     handleType?: 'input' | 'output';
-    validTarget?: boolean;
 }
 
 // --- Constants ---
@@ -131,8 +127,6 @@ const getHandleCoords = (nodeId: string, handleId: string, type: 'input' | 'outp
     const list = type === 'input' ? node.inputs : node.outputs;
     const index = list.findIndex(h => h.id === handleId);
     
-    // Layout calculations based on new CSS spacing
-    // Header (40) + Body Padding (12) + (Index * 28) + HandleCenter (10)
     const yOffset = HEADER_HEIGHT + 12 + (index * 28) + 10; 
     
     return {
@@ -231,7 +225,6 @@ const NodeWidget = React.memo(({
 
                 {/* Config Area */}
                 <div className="space-y-3 pt-1 px-1">
-                    {/* Spacer for handles if necessary */}
                     {(node.inputs.length > 0 || node.outputs.length > 0) && <div style={{ height: Math.max(node.inputs.length, node.outputs.length) * 28 - 10 }}></div>}
 
                     {node.type === 'INPUT_TEXT' && (
@@ -319,9 +312,6 @@ const NodeWidget = React.memo(({
                                 {typeof node.result === 'string' && (node.result.startsWith('http') || node.result.startsWith('data:image')) ? (
                                     <div className="relative group">
                                         <img src={node.result} className="w-full h-32 object-contain bg-zinc-900/50" alt="Result"/>
-                                        <a href={node.result} download="result.png" className="absolute bottom-1 right-1 bg-black/60 text-white p-1 rounded hover:bg-black transition-colors">
-                                            <CursorArrowRaysIcon className="w-3 h-3" />
-                                        </a>
                                     </div>
                                 ) : (
                                     <div className="p-2 max-h-32 overflow-y-auto custom-scrollbar">
@@ -368,19 +358,29 @@ const WorkflowBuilderPage: React.FC = () => {
     const dragState = useRef<DragState | null>(null);
     const isSpacePressed = useRef(false);
 
+    // FIX: Refs for nodes/edges to avoid stale closures/re-binding event listeners
+    const nodesRef = useRef(nodes);
+    const edgesRef = useRef(edges);
+    const viewportRef = useRef(viewport);
+    
+    useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+    useEffect(() => { edgesRef.current = edges; }, [edges]);
+    useEffect(() => { viewportRef.current = viewport; }, [viewport]);
+
     // --- Coordinates ---
+    // Updated to use ref for stable callback logic inside handlers
     const screenToCanvas = useCallback((sx: number, sy: number) => {
         if (!containerRef.current) return { x: 0, y: 0 };
         const rect = containerRef.current.getBoundingClientRect();
+        const vp = viewportRef.current;
         return {
-            x: (sx - rect.left - viewport.x) / viewport.zoom,
-            y: (sy - rect.top - viewport.y) / viewport.zoom
+            x: (sx - rect.left - vp.x) / vp.zoom,
+            y: (sy - rect.top - vp.y) / vp.zoom
         };
-    }, [viewport]);
+    }, []);
 
     // --- Event Handlers ---
 
-    // Global Mouse Events for robustness
     useEffect(() => {
         const handleWindowMouseMove = (e: MouseEvent) => {
             const currentDrag = dragState.current;
@@ -389,27 +389,35 @@ const WorkflowBuilderPage: React.FC = () => {
             if (currentDrag.type === 'PAN') {
                 const dx = e.clientX - currentDrag.startX;
                 const dy = e.clientY - currentDrag.startY;
-                setViewport({
-                    ...currentDrag.initialViewport!,
-                    x: currentDrag.initialViewport!.x + dx,
-                    y: currentDrag.initialViewport!.y + dy
-                });
+                // Use viewportRef for calculation base if needed, but dragging usually uses initial snapshot
+                if (currentDrag.initialViewport) {
+                    setViewport({
+                        ...currentDrag.initialViewport,
+                        x: currentDrag.initialViewport.x + dx,
+                        y: currentDrag.initialViewport.y + dy
+                    });
+                }
             } 
             else if (currentDrag.type === 'NODE') {
-                const dx = (e.clientX - currentDrag.startX) / viewport.zoom;
-                const dy = (e.clientY - currentDrag.startY) / viewport.zoom;
-                
-                let newX = currentDrag.initialNodePos!.x + dx;
-                let newY = currentDrag.initialNodePos!.y + dy;
-                
-                newX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
-                newY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+                const draggedNodeId = currentDrag.nodeId;
+                if (!draggedNodeId) return; 
 
-                // CRITICAL FIX: Capture nodeId here to prevent "cannot read properties of null" if state clears
-                const targetNodeId = currentDrag.nodeId!;
-                setNodes(prev => prev.map(n => n.id === targetNodeId ? { ...n, x: newX, y: newY } : n));
+                const vp = viewportRef.current;
+                const dx = (e.clientX - currentDrag.startX) / vp.zoom;
+                const dy = (e.clientY - currentDrag.startY) / vp.zoom;
+                
+                if (currentDrag.initialNodePos) {
+                    let newX = currentDrag.initialNodePos.x + dx;
+                    let newY = currentDrag.initialNodePos.y + dy;
+                    
+                    newX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
+                    newY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+
+                    setNodes(prev => prev.map(n => n.id === draggedNodeId ? { ...n, x: newX, y: newY } : n));
+                }
             }
             else if (currentDrag.type === 'CONNECTION') {
+                // Use updated screenToCanvas which uses viewportRef
                 const currentCanvas = screenToCanvas(e.clientX, e.clientY);
                 setTempConnection(prev => prev ? { ...prev, x2: currentCanvas.x, y2: currentCanvas.y } : null);
             }
@@ -424,22 +432,25 @@ const WorkflowBuilderPage: React.FC = () => {
                 const SNAP_RADIUS = 30;
                 let targetMatch: { nodeId: string, handleId: string, type: DataType } | null = null;
 
+                // Use ref current value for nodes to ensure freshness without dependency churn
+                const currentNodes = nodesRef.current;
+
                 // Check against all potential handles
-                nodes.forEach(node => {
+                currentNodes.forEach(node => {
                     if (node.id === currentDrag.sourceNodeId) return;
 
                     const targetType = currentDrag.handleType === 'output' ? 'input' : 'output';
                     const candidateHandles = targetType === 'input' ? node.inputs : node.outputs;
 
                     candidateHandles.forEach(handle => {
-                        const pos = getHandleCoords(node.id, handle.id, targetType, nodes);
+                        const pos = getHandleCoords(node.id, handle.id, targetType, currentNodes);
                         const dist = Math.hypot(pos.x - endCanvas.x, pos.y - endCanvas.y);
                         
                         if (dist < SNAP_RADIUS) {
-                            // Type Validation (simple: any accepts all, otherwise exact match)
+                            // Type Validation
                             const sourceHandleDef = currentDrag.handleType === 'output' 
-                                ? nodes.find(n=>n.id===currentDrag.sourceNodeId)?.outputs.find(h=>h.id===currentDrag.sourceHandleId)
-                                : nodes.find(n=>n.id===currentDrag.sourceNodeId)?.inputs.find(h=>h.id===currentDrag.sourceHandleId);
+                                ? currentNodes.find(n=>n.id===currentDrag.sourceNodeId)?.outputs.find(h=>h.id===currentDrag.sourceHandleId)
+                                : currentNodes.find(n=>n.id===currentDrag.sourceNodeId)?.inputs.find(h=>h.id===currentDrag.sourceHandleId);
                             
                             const sourceType = sourceHandleDef?.type;
                             
@@ -460,8 +471,8 @@ const WorkflowBuilderPage: React.FC = () => {
                         targetHandle: fromOutput ? targetMatch!.handleId : currentDrag.sourceHandleId!
                     };
 
-                    // Dupe check
-                    const exists = edges.some(edge => 
+                    const currentEdges = edgesRef.current;
+                    const exists = currentEdges.some(edge => 
                         edge.source === newEdge.source && edge.target === newEdge.target && 
                         edge.sourceHandle === newEdge.sourceHandle && edge.targetHandle === newEdge.targetHandle
                     );
@@ -478,51 +489,12 @@ const WorkflowBuilderPage: React.FC = () => {
 
         window.addEventListener('mousemove', handleWindowMouseMove);
         window.addEventListener('mouseup', handleWindowMouseUp);
+        
         return () => {
             window.removeEventListener('mousemove', handleWindowMouseMove);
             window.removeEventListener('mouseup', handleWindowMouseUp);
         };
-    }, [nodes, edges, viewport, screenToCanvas]);
-
-    // --- Input Handlers ---
-
-    const onMouseDownCanvas = (e: React.MouseEvent) => {
-        const isBackground = (e.target as HTMLElement).classList.contains('canvas-bg');
-        if (e.button === 1 || (e.button === 0 && isSpacePressed.current) || (e.button === 0 && isBackground)) {
-            e.preventDefault();
-            if(isBackground) setSelectedNodeId(null);
-            dragState.current = { type: 'PAN', startX: e.clientX, startY: e.clientY, initialViewport: { ...viewport } };
-        }
-    };
-
-    const onNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
-        if (e.button !== 0 || isSpacePressed.current) return;
-        e.stopPropagation();
-        setSelectedNodeId(nodeId);
-        const node = nodes.find(n => n.id === nodeId);
-        if (node) {
-            dragState.current = { type: 'NODE', startX: e.clientX, startY: e.clientY, nodeId, initialNodePos: { x: node.x, y: node.y } };
-        }
-    }, [nodes]);
-
-    const onHandleMouseDown = useCallback((e: React.MouseEvent, nodeId: string, handleId: string, type: 'input' | 'output') => {
-        e.stopPropagation();
-        const coords = getHandleCoords(nodeId, handleId, type, nodes);
-        dragState.current = { type: 'CONNECTION', startX: coords.x, startY: coords.y, sourceNodeId: nodeId, sourceHandleId: handleId, handleType: type };
-        const mouseCanvas = screenToCanvas(e.clientX, e.clientY);
-        setTempConnection({ x1: coords.x, y1: coords.y, x2: mouseCanvas.x, y2: mouseCanvas.y, type });
-    }, [nodes, screenToCanvas]);
-
-    const handleWheel = (e: React.WheelEvent) => {
-        const zoomIntensity = 0.001;
-        const newZoom = Math.min(Math.max(viewport.zoom - e.deltaY * zoomIntensity, 0.2), 2.5);
-        const rect = containerRef.current!.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left - viewport.x) / viewport.zoom;
-        const mouseY = (e.clientY - rect.top - viewport.y) / viewport.zoom;
-        const newX = e.clientX - rect.left - mouseX * newZoom;
-        const newY = e.clientY - rect.top - mouseY * newZoom;
-        setViewport({ x: newX, y: newY, zoom: newZoom });
-    };
+    }, [screenToCanvas]); // Dependency array kept minimal
 
     // --- Logic ---
 
@@ -540,7 +512,15 @@ const WorkflowBuilderPage: React.FC = () => {
         const container = containerRef.current;
         const cx = container ? container.clientWidth / 2 : 500;
         const cy = container ? container.clientHeight / 2 : 400;
-        const pos = screenToCanvas(container!.getBoundingClientRect().left + cx, container!.getBoundingClientRect().top + cy);
+        
+        // Use viewport ref for accurate center positioning relative to zoom/pan
+        const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+        const vp = viewportRef.current;
+        
+        const pos = {
+            x: (rect.left + cx - rect.left - vp.x) / vp.zoom,
+            y: (rect.top + cy - rect.top - vp.y) / vp.zoom
+        };
         
         const def = NODE_DEFINITIONS[type];
         const newNode: NodeData = {
@@ -562,7 +542,6 @@ const WorkflowBuilderPage: React.FC = () => {
         setIsRunning(true);
         setNodes(prev => prev.map(n => ({ ...n, status: 'IDLE', error: undefined })));
 
-        // Execution Graph
         const graph = new Map<string, string[]>();
         const inDegree = new Map<string, number>();
         nodes.forEach(n => { graph.set(n.id, []); inDegree.set(n.id, 0); });
@@ -580,19 +559,17 @@ const WorkflowBuilderPage: React.FC = () => {
                 const current = queue.shift()!;
                 setNodes(prev => prev.map(n => n.id === current.id ? { ...n, status: 'RUNNING' } : n));
                 
-                // Gather Inputs
                 const incoming = edges.filter(e => e.target === current.id);
                 const inputValues = incoming.map(e => nodes.find(n => n.id === e.source)?.result).filter(v => v !== undefined);
 
-                // Execute
                 let result: any = null;
-                await new Promise(r => setTimeout(r, 800)); // Visual delay
+                await new Promise(r => setTimeout(r, 800)); 
 
                 if (current.type === 'INPUT_TEXT') result = current.config.value;
                 else if (current.type === 'INPUT_IMAGE') result = current.config.url;
                 else if (current.type === 'LLM') {
                     const prompt = current.config.prompt.replace('{{input}}', inputValues.join('\n') || '');
-                    result = await aiService.generateContent('text', prompt);
+                    result = await aiService.generateText(prompt, current.config.model);
                 }
                 else if (current.type === 'IMAGE_GEN') {
                     let prompt = current.config.prompt || '';
@@ -605,7 +582,6 @@ const WorkflowBuilderPage: React.FC = () => {
 
                 setNodes(prev => prev.map(n => n.id === current.id ? { ...n, status: 'SUCCESS', result } : n));
 
-                // Queue neighbors
                 const neighbors = graph.get(current.id) || [];
                 for (const neighborId of neighbors) {
                     inDegree.set(neighborId, inDegree.get(neighborId)! - 1);
@@ -624,6 +600,24 @@ const WorkflowBuilderPage: React.FC = () => {
         const control = Math.max(dist * 0.5, 80);
         return `M ${x1} ${y1} C ${x1 + control} ${y1}, ${x2 - control} ${y2}, ${x2} ${y2}`;
     };
+
+    const onNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
+        if (e.button !== 0 || isSpacePressed.current) return;
+        e.stopPropagation();
+        setSelectedNodeId(nodeId);
+        const node = nodesRef.current.find(n => n.id === nodeId);
+        if (node) {
+            dragState.current = { type: 'NODE', startX: e.clientX, startY: e.clientY, nodeId, initialNodePos: { x: node.x, y: node.y } };
+        }
+    }, []);
+
+    const onHandleMouseDown = useCallback((e: React.MouseEvent, nodeId: string, handleId: string, type: 'input' | 'output') => {
+        e.stopPropagation();
+        const coords = getHandleCoords(nodeId, handleId, type, nodesRef.current);
+        dragState.current = { type: 'CONNECTION', startX: coords.x, startY: coords.y, sourceNodeId: nodeId, sourceHandleId: handleId, handleType: type };
+        const mouseCanvas = screenToCanvas(e.clientX, e.clientY);
+        setTempConnection({ x1: coords.x, y1: coords.y, x2: mouseCanvas.x, y2: mouseCanvas.y, type });
+    }, [screenToCanvas]);
 
     return (
         <div className="flex h-[calc(100vh-4rem)] bg-[#050505] text-white overflow-hidden font-sans relative">
@@ -666,8 +660,24 @@ const WorkflowBuilderPage: React.FC = () => {
             <div 
                 ref={containerRef}
                 className="flex-1 relative overflow-hidden cursor-default canvas-bg outline-none"
-                onMouseDown={onMouseDownCanvas}
-                onWheel={handleWheel}
+                onMouseDown={(e) => {
+                    const isBackground = (e.target as HTMLElement).classList.contains('canvas-bg');
+                    if (e.button === 1 || (e.button === 0 && isSpacePressed.current) || (e.button === 0 && isBackground)) {
+                        e.preventDefault();
+                        if(isBackground) setSelectedNodeId(null);
+                        dragState.current = { type: 'PAN', startX: e.clientX, startY: e.clientY, initialViewport: { ...viewport } };
+                    }
+                }}
+                onWheel={(e) => {
+                    const zoomIntensity = 0.001;
+                    const newZoom = Math.min(Math.max(viewport.zoom - e.deltaY * zoomIntensity, 0.2), 2.5);
+                    const rect = containerRef.current!.getBoundingClientRect();
+                    const mouseX = (e.clientX - rect.left - viewport.x) / viewport.zoom;
+                    const mouseY = (e.clientY - rect.top - viewport.y) / viewport.zoom;
+                    const newX = e.clientX - rect.left - mouseX * newZoom;
+                    const newY = e.clientY - rect.top - mouseY * newZoom;
+                    setViewport({ x: newX, y: newY, zoom: newZoom });
+                }}
                 tabIndex={0}
             >
                 {/* Dot Grid */}
@@ -695,7 +705,6 @@ const WorkflowBuilderPage: React.FC = () => {
                             const end = getHandleCoords(edge.target, edge.targetHandle, 'input', nodes);
                             const path = getPath(start.x, start.y, end.x, end.y);
                             
-                            // Check if edge is active (source node succeeded)
                             const sourceNode = nodes.find(n => n.id === edge.source);
                             const isActive = sourceNode?.status === 'SUCCESS' || sourceNode?.status === 'RUNNING';
 

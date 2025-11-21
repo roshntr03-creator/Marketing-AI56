@@ -368,12 +368,45 @@ const aiService = {
       throw new Error("Composition failed");
   },
   
-  generateContent: async (contentType: string, topic: string, tone?: string): Promise<string> => {
+  generateText: async (prompt: string, model: string = 'gemini-2.5-flash'): Promise<string> => {
     const ai = createAI();
     const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+    });
+    return response.text || '';
+  },
+
+  generateContent: async (params: { 
+      type: string; 
+      topic: string; 
+      audience?: string; 
+      tone?: string; 
+      keywords?: string[]; 
+      length?: string;
+      language?: string; 
+  }): Promise<string> => {
+    const ai = createAI();
+    
+    const prompt = `
+      Act as a professional world-class copywriter.
+      
+      TASK: Write a ${params.length || 'medium length'} ${params.type}.
+      TOPIC: ${params.topic}
+      TARGET AUDIENCE: ${params.audience || 'General Audience'}
+      TONE: ${params.tone || 'Professional'}
+      ${params.keywords?.length ? `KEYWORDS TO INCLUDE: ${params.keywords.join(', ')}` : ''}
+      ${params.language ? `LANGUAGE: Write strictly in ${params.language}` : ''}
+      
+      FORMATTING RULES:
+      - Use proper Markdown formatting (H1, H2, bold, bullet points).
+      - Be engaging and concise.
+      - Do not include preamble or conversational filler (e.g. "Here is your blog post"). Just output the content body.
+    `;
+
+    const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Write a ${contentType} about ${topic}. Tone: ${tone}. 
-        Format using Markdown. Include sections and bullet points.`,
+        contents: prompt,
     });
     return response.text || '';
   },
