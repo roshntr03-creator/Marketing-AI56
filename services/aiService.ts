@@ -262,7 +262,17 @@ const aiService = {
         });
     }
 
-    // 3. Seedream v4 (Default Fallback)
+    // 3. Nano Banana Pro
+    if (model === 'nano-banana-pro') {
+        return runKieTask(model, {
+            prompt,
+            aspect_ratio: aspectRatio, // Supports all common ratios directly (1:1, 16:9, 9:16 etc)
+            resolution: '2K',
+            output_format: 'png'
+        });
+    }
+
+    // 4. Seedream v4 (Default Fallback)
     if (model === 'bytedance/seedream-v4-text-to-image') {
         const sizeMap: Record<string, string> = {
             '1:1': 'square_hd',
@@ -495,7 +505,7 @@ const aiService = {
 
   connectToCoachLive: async (callbacks: { 
     onopen?: () => void; 
-    onmessage?: (message: LiveServerMessage) => void; 
+    onmessage: (message: LiveServerMessage) => void; 
     onclose?: (e: CloseEvent) => void; 
     onerror?: (e: ErrorEvent) => void; 
   }) => {

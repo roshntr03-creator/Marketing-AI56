@@ -21,6 +21,7 @@ import {
 
 const MODELS = [
     { id: 'grok-imagine/text-to-image', name: 'Grok 3 (Imagine)', desc: 'High realism, great prompt adherence' },
+    { id: 'nano-banana-pro', name: 'Nano Banana Pro', desc: 'Product-focused imagery & text integration' },
     { id: 'bytedance/seedream-v4-text-to-image', name: 'Seedream v4', desc: 'Artistic styles and illustrations' },
     { id: 'gemini-2.5-flash-image', name: 'Gemini Flash', desc: 'Fast, general purpose imagery' },
 ];

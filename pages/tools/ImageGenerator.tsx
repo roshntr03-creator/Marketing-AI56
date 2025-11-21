@@ -28,6 +28,8 @@ const ImageGenerator: React.FC = () => {
             type: 'IMAGE',
             title: prompt.substring(0, 50),
             params: { prompt, aspectRatio },
+            status: 'Completed',
+            resultUrl: imageUrl
         });
         // In a real app, you'd likely want to handle the blob directly
         alert('Image saved to Creations Hub!');

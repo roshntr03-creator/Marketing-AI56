@@ -1,48 +1,51 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Button from '../components/ui/Button';
-import { Textarea } from '../components/ui/Input';
+
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
     PhotoIcon, 
-    VideoCameraIcon, 
-    SparklesIcon, 
-    CubeIcon, 
-    ArrowUpOnSquareIcon, 
-    PlayIcon,
-    ArrowsRightLeftIcon,
-    UserIcon,
+    DocumentTextIcon, 
+    CpuChipIcon, 
+    PlayIcon, 
+    ArrowPathIcon, 
+    CubeIcon,
+    EyeIcon,
+    XMarkIcon,
     MagnifyingGlassMinusIcon,
     MagnifyingGlassPlusIcon,
-    ArrowsPointingOutIcon,
-    ArrowPathIcon,
-    ChevronUpIcon,
-    ChevronDownIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    MinusIcon,
-    QuestionMarkCircleIcon,
-    CpuChipIcon
+    TrashIcon,
+    BoltIcon,
+    CursorArrowRaysIcon,
+    StopIcon,
+    ExclamationTriangleIcon,
+    CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { useAppContext } from '../contexts/AppContext';
 import aiService from '../services/aiService';
+import { Input, Textarea } from '../components/ui/Input';
 
-// --- Types ---
-type NodeType = 'MODEL_SELECT' | 'SCENE_GEN' | 'PRODUCT_ASSET' | 'COMPOSITOR' | 'VIDEO_GEN';
+// --- Types & Interfaces ---
+
+type NodeType = 'INPUT_TEXT' | 'INPUT_IMAGE' | 'LLM' | 'IMAGE_GEN' | 'VIEWER';
+type DataType = 'text' | 'image' | 'any';
 
 interface NodeData {
     id: string;
     type: NodeType;
     x: number;
     y: number;
-    title: string;
-    data: any;
-    status: 'IDLE' | 'RUNNING' | 'COMPLETED' | 'ERROR';
-    errorMessage?: string;
+    label: string;
+    inputs: { id: string; label: string; type: DataType }[];
+    outputs: { id: string; label: string; type: DataType }[];
+    config: Record<string, any>;
+    status: 'IDLE' | 'RUNNING' | 'SUCCESS' | 'ERROR';
+    result?: any;
+    error?: string;
 }
 
-interface Connection {
+interface Edge {
     id: string;
-    from: string;
-    to: string;
+    source: string;
+    sourceHandle: string;
+    target: string;
+    targetHandle: string;
 }
 
 interface Viewport {
@@ -51,566 +54,706 @@ interface Viewport {
     zoom: number;
 }
 
-// --- Visual Components ---
+interface DragState {
+    type: 'PAN' | 'NODE' | 'CONNECTION';
+    startX: number;
+    startY: number;
+    initialViewport?: Viewport;
+    nodeId?: string; // For Node Dragging
+    initialNodePos?: { x: number, y: number };
+    sourceNodeId?: string; // For Connecting
+    sourceHandleId?: string;
+    handleType?: 'input' | 'output';
+    validTarget?: boolean;
+}
 
-const NodeHeader: React.FC<{ type: NodeType; title: string; status: string }> = ({ type, title, status }) => {
-    const styles = {
-        MODEL_SELECT: { bg: 'from-pink-500/20 to-rose-600/20', border: 'border-pink-500/50', iconColor: 'text-pink-400', glow: 'shadow-pink-500/20' },
-        SCENE_GEN: { bg: 'from-indigo-500/20 to-blue-600/20', border: 'border-indigo-500/50', iconColor: 'text-indigo-400', glow: 'shadow-indigo-500/20' },
-        PRODUCT_ASSET: { bg: 'from-emerald-500/20 to-teal-600/20', border: 'border-emerald-500/50', iconColor: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
-        COMPOSITOR: { bg: 'from-violet-500/20 to-purple-600/20', border: 'border-violet-500/50', iconColor: 'text-violet-400', glow: 'shadow-violet-500/20' },
-        VIDEO_GEN: { bg: 'from-orange-500/20 to-amber-600/20', border: 'border-orange-500/50', iconColor: 'text-orange-400', glow: 'shadow-orange-500/20' },
-    };
+// --- Constants ---
 
-    const icons = {
-        MODEL_SELECT: <UserIcon className="w-4 h-4" />,
-        SCENE_GEN: <PhotoIcon className="w-4 h-4" />,
-        PRODUCT_ASSET: <CubeIcon className="w-4 h-4" />,
-        COMPOSITOR: <ArrowsRightLeftIcon className="w-4 h-4" />,
-        VIDEO_GEN: <VideoCameraIcon className="w-4 h-4" />,
-    };
+const NODE_WIDTH = 280;
+const HEADER_HEIGHT = 40;
+const GRID_SIZE = 20;
 
-    const style = styles[type] || styles.MODEL_SELECT;
-
-    return (
-        <div className={`flex items-center justify-between px-4 py-3 bg-gradient-to-r ${style.bg} backdrop-blur-md border-b border-white/5 cursor-grab active:cursor-grabbing node-handle relative overflow-hidden group`}>
-            {/* Animated Shine */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
-            
-            <div className="flex items-center gap-2.5 relative z-10">
-                <div className={`p-1 rounded bg-black/30 backdrop-blur border border-white/10 ${style.iconColor}`}>
-                    {icons[type]}
-                </div>
-                <span className="text-xs font-bold text-white uppercase tracking-wider font-display drop-shadow-md">{title}</span>
-            </div>
-            <div className="flex gap-1.5 items-center">
-                {status === 'RUNNING' && <span className="text-[10px] font-mono text-indigo-300 animate-pulse mr-2">PROCESSING</span>}
-                <div className={`w-2 h-2 rounded-full border border-white/20 shadow-[0_0_10px_currentColor] ${status === 'RUNNING' ? 'bg-indigo-400 text-indigo-400 animate-pulse' : status === 'COMPLETED' ? 'bg-emerald-400 text-emerald-400' : status === 'ERROR' ? 'bg-red-500 text-red-500' : 'bg-zinc-600 text-zinc-600'}`}></div>
-            </div>
-        </div>
-    );
+const TYPE_COLORS: Record<DataType, string> = {
+    text: '#fbbf24', // Amber
+    image: '#ec4899', // Pink
+    any: '#94a3b8'   // Slate
 };
 
-const WorkflowBuilderPage: React.FC = () => {
-    const { addCreation } = useAppContext();
-    const containerRef = useRef<HTMLDivElement>(null);
+const NODE_DEFINITIONS: Record<NodeType, { label: string, icon: any, color: string, inputs: {id:string, label:string, type:DataType}[], outputs: {id:string, label:string, type:DataType}[], defaultConfig: any }> = {
+    INPUT_TEXT: {
+        label: 'Text Input',
+        icon: DocumentTextIcon,
+        color: 'border-amber-500/30 bg-amber-500/5 text-amber-500',
+        inputs: [],
+        outputs: [{ id: 'out', label: 'Text', type: 'text' }],
+        defaultConfig: { value: 'A futuristic cityscape' }
+    },
+    INPUT_IMAGE: {
+        label: 'Image Input',
+        icon: PhotoIcon,
+        color: 'border-pink-500/30 bg-pink-500/5 text-pink-500',
+        inputs: [],
+        outputs: [{ id: 'out', label: 'Image', type: 'image' }],
+        defaultConfig: { url: '' }
+    },
+    LLM: {
+        label: 'AI Processor',
+        icon: CpuChipIcon,
+        color: 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400',
+        inputs: [{ id: 'in', label: 'Context', type: 'text' }],
+        outputs: [{ id: 'out', label: 'Response', type: 'text' }],
+        defaultConfig: { model: 'gemini-2.5-flash', prompt: 'Enhance this prompt: {{input}}' }
+    },
+    IMAGE_GEN: {
+        label: 'Image Gen',
+        icon: CubeIcon,
+        color: 'border-purple-500/30 bg-purple-500/5 text-purple-400',
+        inputs: [{ id: 'in', label: 'Prompt', type: 'text' }],
+        outputs: [{ id: 'out', label: 'Image', type: 'image' }],
+        defaultConfig: { model: 'nano-banana-pro', aspectRatio: '16:9', prompt: '' }
+    },
+    VIEWER: {
+        label: 'Viewer',
+        icon: EyeIcon,
+        color: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400',
+        inputs: [{ id: 'in', label: 'Data', type: 'any' }],
+        outputs: [],
+        defaultConfig: {}
+    }
+};
+
+// --- Helper Functions ---
+
+const getHandleCoords = (nodeId: string, handleId: string, type: 'input' | 'output', nodes: NodeData[]) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return { x: 0, y: 0 };
+
+    const list = type === 'input' ? node.inputs : node.outputs;
+    const index = list.findIndex(h => h.id === handleId);
     
-    // --- State ---
-    const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
-    const [isPanning, setIsPanning] = useState(false);
-    const [draggingNode, setDraggingNode] = useState<string | null>(null);
-    const [isToolbarCollapsed, setIsToolbarCollapsed] = useState(false);
+    // Layout calculations based on new CSS spacing
+    // Header (40) + Body Padding (12) + (Index * 28) + HandleCenter (10)
+    const yOffset = HEADER_HEIGHT + 12 + (index * 28) + 10; 
     
-    // Initial nodes
-    const [nodes, setNodes] = useState<NodeData[]>([
-        { 
-            id: 'n_model', type: 'MODEL_SELECT', x: 550, y: 150, title: 'Base Model', status: 'IDLE',
-            data: { prompt: 'A professional fashion model posing naturally, studio lighting', result: null } 
-        },
-        { 
-            id: 'n_scene', type: 'SCENE_GEN', x: 550, y: 550, title: 'Environment', status: 'IDLE',
-            data: { prompt: 'A minimalist luxury marble podium, soft shadows, high key lighting', result: null } 
-        },
-        { 
-            id: 'n_product', type: 'PRODUCT_ASSET', x: 1000, y: 350, title: 'Product Input', status: 'IDLE',
-            data: { file: null, preview: null } 
-        },
-        { 
-            id: 'n_comp', type: 'COMPOSITOR', x: 1450, y: 350, title: 'AI Compositor', status: 'IDLE',
-            data: { prompt: 'Place the product naturally in the scene, ensuring realistic shadows and lighting matches.', result: null } 
-        },
-        { 
-            id: 'n_video', type: 'VIDEO_GEN', x: 1900, y: 350, title: 'Motion Gen', status: 'IDLE',
-            data: { prompt: 'Cinematic slow motion camera orbit around the product', result: null } 
-        }
-    ]);
-
-    const [connections] = useState<Connection[]>([
-        { id: 'c1', from: 'n_model', to: 'n_product' },
-        { id: 'c2', from: 'n_scene', to: 'n_product' },
-        { id: 'c3', from: 'n_product', to: 'n_comp' },
-        { id: 'c4', from: 'n_comp', to: 'n_video' }
-    ]);
-
-    // --- Viewport Handlers ---
-
-    const handleWheel = (e: React.WheelEvent) => {
-        e.preventDefault();
-        const scaleFactor = 0.001;
-        const newZoom = Math.min(Math.max(viewport.zoom - e.deltaY * scaleFactor, 0.2), 2);
-        setViewport(prev => ({ ...prev, zoom: newZoom }));
+    return {
+        x: type === 'input' ? node.x : node.x + NODE_WIDTH,
+        y: node.y + yOffset
     };
+};
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('.node-handle')) {
-            const nodeId = (e.target as HTMLElement).closest('[data-node-id]')?.getAttribute('data-node-id');
-            if (nodeId) setDraggingNode(nodeId);
-            return;
-        }
-        
-        if ((e.target as HTMLElement).closest('input, textarea, button')) return;
-        setIsPanning(true);
-    };
+// --- Node Component ---
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (isPanning) {
-            setViewport(prev => ({ ...prev, x: prev.x + e.movementX, y: prev.y + e.movementY }));
-        } else if (draggingNode) {
-            setNodes(prev => prev.map(n => {
-                if (n.id === draggingNode) {
-                    return { ...n, x: n.x + e.movementX / viewport.zoom, y: n.y + e.movementY / viewport.zoom };
-                }
-                return n;
-            }));
-        }
-    };
+const NodeWidget = React.memo(({ 
+    node, 
+    selected, 
+    onMouseDown, 
+    onHandleMouseDown,
+    updateNodeConfig,
+    deleteNode
+}: { 
+    node: NodeData, 
+    selected: boolean, 
+    onMouseDown: (e: React.MouseEvent, id: string) => void,
+    onHandleMouseDown: (e: React.MouseEvent, nodeId: string, handleId: string, type: 'input' | 'output') => void,
+    updateNodeConfig: (id: string, key: string, value: any) => void,
+    deleteNode: (id: string) => void
+}) => {
+    const def = NODE_DEFINITIONS[node.type];
+    const Icon = def.icon;
 
-    const handleMouseUp = () => {
-        setIsPanning(false);
-        setDraggingNode(null);
-    };
-
-    const pan = (dx: number, dy: number) => {
-        setViewport(prev => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
-    };
-
-    // --- Helper Functions ---
-
-    const updateNode = (id: string, updates: Partial<NodeData>) => {
-        setNodes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
-    };
-
-    const updateNodeData = (id: string, data: any) => {
-        setNodes(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, ...data } } : n));
-    };
-
-    const getInputs = (nodeId: string) => {
-        return connections
-            .filter(c => c.to === nodeId)
-            .map(c => nodes.find(n => n.id === c.from))
-            .filter(Boolean) as NodeData[];
-    };
-
-    // --- Execution Logic ---
-
-    const runImageGen = async (node: NodeData) => {
-        if (!node.data.prompt) return;
-        updateNode(node.id, { status: 'RUNNING', errorMessage: undefined });
-        
-        try {
-            const url = await aiService.generateImage(node.data.prompt, '1:1');
-            updateNodeData(node.id, { result: url });
-            updateNode(node.id, { status: 'COMPLETED' });
-        } catch (e) {
-            console.error(e);
-            updateNode(node.id, { status: 'ERROR', errorMessage: 'Generation failed' });
-        }
-    };
-
-    const runCompositor = async (node: NodeData) => {
-        const inputNodes = getInputs(node.id);
-        const productNode = inputNodes.find(n => n.type === 'PRODUCT_ASSET');
-        
-        let bgNode: NodeData | undefined;
-        
-        if (productNode) {
-             const productInputs = getInputs(productNode.id);
-             bgNode = productInputs.find(n => (n.type === 'SCENE_GEN' || n.type === 'MODEL_SELECT') && n.data.result);
-        }
-
-        if (!productNode?.data.preview) {
-            updateNode(node.id, { status: 'ERROR', errorMessage: "Missing Product Image" });
-            return;
-        }
-        
-        if (!bgNode?.data.result) {
-            const directBg = inputNodes.find(n => (n.type === 'SCENE_GEN' || n.type === 'MODEL_SELECT') && n.data.result);
-            if (directBg) {
-                bgNode = directBg;
-            } else {
-                updateNode(node.id, { status: 'ERROR', errorMessage: "Missing Background (Scene/Model)" });
-                return;
-            }
-        }
-
-        updateNode(node.id, { status: 'RUNNING', errorMessage: undefined });
-        
-        try {
-            const bgUrl = bgNode.data.result;
-            const fgUrl = productNode.data.preview;
-
-            let realBgBase64 = bgUrl.includes(',') ? bgUrl.split(',')[1] : bgUrl;
-            if (bgUrl.startsWith('http')) {
-                const resp = await fetch(bgUrl);
-                const blob = await resp.blob();
-                realBgBase64 = await new Promise<string>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-                    reader.readAsDataURL(blob);
-                });
-            }
-            
-            const fgBase64 = fgUrl.split(',')[1];
-            
-            const url = await aiService.compositeImages(realBgBase64, fgBase64, node.data.prompt);
-            updateNodeData(node.id, { result: url });
-            updateNode(node.id, { status: 'COMPLETED' });
-        } catch (e) {
-            console.error(e);
-            updateNode(node.id, { status: 'ERROR', errorMessage: "Composition Failed" });
-        }
-    };
-
-    const runVideoGen = async (node: NodeData) => {
-        const inputNodes = getInputs(node.id);
-        const compNode = inputNodes.find(n => n.type === 'COMPOSITOR');
-        
-        if (!compNode?.data.result) {
-            updateNode(node.id, { status: 'ERROR', errorMessage: "Waiting for Composite" });
-            return;
-        }
-        
-        updateNode(node.id, { status: 'RUNNING', errorMessage: undefined });
-        
-        try {
-             const videoUrl = await aiService.generatePromoVideo({
-                 prompt: node.data.prompt,
-                 duration: '5s',
-                 aspectRatio: '1:1'
-             });
-             
-             updateNodeData(node.id, { result: videoUrl });
-             updateNode(node.id, { status: 'COMPLETED' });
-             
-             addCreation({
-                 type: 'PROMO_VIDEO',
-                 title: 'Workflow Result',
-                 params: { prompt: node.data.prompt },
-                 status: 'Completed',
-                 resultUrl: videoUrl
-             });
-
-        } catch (e) {
-            console.error(e);
-            updateNode(node.id, { status: 'ERROR', errorMessage: "Generation Failed" });
-        }
-    };
-
-    const renderConnection = (conn: Connection) => {
-        const n1 = nodes.find(n => n.id === conn.from);
-        const n2 = nodes.find(n => n.id === conn.to);
-        if (!n1 || !n2) return null;
-
-        const w = 340; // node width
-        const h = 400; // approx node height
-        const startX = n1.x + w;
-        const startY = n1.y + 80; // Approximate output handle Y
-        const endX = n2.x;
-        const endY = n2.y + 80; // Approximate input handle Y
-
-        const dist = Math.abs(endX - startX);
-        const cp1x = startX + dist * 0.5;
-        const cp2x = endX - dist * 0.5;
-
-        const pathData = `M ${startX} ${startY} C ${cp1x} ${startY}, ${cp2x} ${endY}, ${endX} ${endY}`;
-        
-        const isActive = n1.status === 'COMPLETED';
-        const isError = n1.status === 'ERROR';
-
-        return (
-            <g key={conn.id}>
-                {/* Glow underlying stroke */}
-                <path d={pathData} stroke={isActive ? "rgba(99,102,241,0.4)" : "transparent"} strokeWidth="12" fill="none" className="transition-all duration-500" style={{filter: 'blur(6px)'}} />
-                {/* Background stroke */}
-                <path d={pathData} stroke="#18181b" strokeWidth="6" fill="none" />
-                {/* Main connection line */}
-                <path d={pathData} stroke={isActive ? "url(#gradientStroke)" : "#3f3f46"} strokeWidth="3" fill="none" className="transition-all duration-500" />
-                
-                {/* Animated particles for active flows */}
-                {isActive && (
-                     <circle r="3" fill="#fff">
-                        <animateMotion dur="1.5s" repeatCount="indefinite" path={pathData} calcMode="linear" keyPoints="0;1" keyTimes="0;1" />
-                     </circle>
-                )}
-            </g>
-        );
+    const stopPropagation = (e: React.MouseEvent | React.TouchEvent | React.KeyboardEvent) => {
+        e.stopPropagation();
     };
 
     return (
-        <div className="relative w-full h-[calc(100vh-4rem)] bg-[#020203] overflow-hidden select-none font-sans">
-            
-            {/* Toolbar - Collapsible Floating Island */}
-            <div className="absolute top-8 left-8 z-50 flex flex-col gap-4">
-                <div className={`bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out overflow-hidden ${isToolbarCollapsed ? 'w-14 h-14 p-0 flex items-center justify-center cursor-pointer hover:bg-zinc-800' : 'p-6 w-80'}`}>
-                    {isToolbarCollapsed ? (
-                        <button onClick={() => setIsToolbarCollapsed(false)} title="Show Info" className="w-full h-full flex items-center justify-center">
-                            <CpuChipIcon className="w-6 h-6 text-indigo-400" />
-                        </button>
-                    ) : (
-                        <div className="relative animate-fade-in">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-500/20 rounded-xl border border-indigo-500/30 text-indigo-400">
-                                        <CpuChipIcon className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h1 className="font-bold text-white text-lg font-display tracking-tight">Workflow OS</h1>
-                                        <p className="text-[10px] text-indigo-300 font-mono uppercase tracking-wider">v2.4.0 • Connected</p>
-                                    </div>
+        <div 
+            className={`absolute flex flex-col rounded-lg bg-[#121214] border shadow-xl transition-all duration-200 group ${selected ? 'border-indigo-500 ring-1 ring-indigo-500 shadow-indigo-500/20 z-50' : 'border-white/10 z-10 hover:border-white/20'}`}
+            style={{ 
+                width: NODE_WIDTH, 
+                transform: `translate(${node.x}px, ${node.y}px)`,
+            }}
+            onMouseDown={(e) => onMouseDown(e, node.id)}
+        >
+            {/* Header */}
+            <div className={`h-10 px-3 flex items-center justify-between rounded-t-lg border-b border-white/5 ${def.color} cursor-grab active:cursor-grabbing select-none bg-opacity-20`}>
+                <div className="flex items-center gap-2 font-bold text-[10px] uppercase tracking-wider text-zinc-200">
+                    <Icon className="w-4 h-4 opacity-80" />
+                    {node.label}
+                </div>
+                <div className="flex items-center gap-2">
+                    {node.status === 'RUNNING' && <ArrowPathIcon className="w-3 h-3 animate-spin text-indigo-400" />}
+                    {node.status === 'SUCCESS' && <CheckCircleIcon className="w-3 h-3 text-emerald-400" />}
+                    {node.status === 'ERROR' && <ExclamationTriangleIcon className="w-3 h-3 text-red-400" />}
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }} 
+                        className="text-zinc-600 hover:text-red-400 ml-1 transition-colors"
+                    >
+                        <XMarkIcon className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-3 relative cursor-default" onMouseDown={stopPropagation}>
+                
+                {/* Handles - Absolute Positioned relative to Body */}
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                    {/* Inputs */}
+                    <div className="absolute left-[-6px] top-[10px] flex flex-col gap-[8px] pointer-events-auto">
+                        {node.inputs.map((input) => (
+                            <div key={input.id} className="h-[20px] flex items-center relative group/handle">
+                                <div 
+                                    className="w-3 h-3 rounded-full border border-zinc-700 bg-[#121214] hover:bg-white hover:scale-125 transition-all cursor-crosshair z-20"
+                                    style={{ borderColor: TYPE_COLORS[input.type] }}
+                                    onMouseDown={(e) => onHandleMouseDown(e, node.id, input.id, 'input')}
+                                    title={`${input.label} (${input.type})`}
+                                />
+                                <span className="ml-2 text-[10px] text-zinc-500 font-medium">{input.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Outputs */}
+                    <div className="absolute right-[-6px] top-[10px] flex flex-col gap-[8px] pointer-events-auto w-full">
+                        {node.outputs.map((output) => (
+                            <div key={output.id} className="h-[20px] flex items-center justify-end relative group/handle">
+                                <span className="mr-2 text-[10px] text-zinc-500 font-medium text-right">{output.label}</span>
+                                <div 
+                                    className="w-3 h-3 rounded-full border border-zinc-700 bg-[#121214] hover:bg-white hover:scale-125 transition-all cursor-crosshair z-20"
+                                    style={{ borderColor: TYPE_COLORS[output.type] }}
+                                    onMouseDown={(e) => onHandleMouseDown(e, node.id, output.id, 'output')}
+                                    title={`${output.label} (${output.type})`}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Config Area */}
+                <div className="space-y-3 pt-1 px-1">
+                    {/* Spacer for handles if necessary */}
+                    {(node.inputs.length > 0 || node.outputs.length > 0) && <div style={{ height: Math.max(node.inputs.length, node.outputs.length) * 28 - 10 }}></div>}
+
+                    {node.type === 'INPUT_TEXT' && (
+                        <Textarea 
+                            value={node.config.value}
+                            onChange={(e) => updateNodeConfig(node.id, 'value', e.target.value)}
+                            placeholder="Enter text..."
+                            className="bg-zinc-900 border-white/5 text-xs min-h-[60px] resize-y focus:border-indigo-500/50 p-2 rounded"
+                        />
+                    )}
+                    
+                    {node.type === 'INPUT_IMAGE' && (
+                        <div className="space-y-2">
+                            <Input
+                                value={node.config.url}
+                                onChange={(e) => updateNodeConfig(node.id, 'url', e.target.value)}
+                                placeholder="Image URL..."
+                                className="bg-zinc-900 border-white/5 text-xs p-2"
+                            />
+                            {node.config.url && (
+                                <div className="rounded overflow-hidden border border-white/5 h-24 bg-black/20 relative">
+                                    <img src={node.config.url} className="w-full h-full object-cover" alt="preview" onError={(e) => (e.currentTarget.src = 'https://placehold.co/300x200?text=Invalid+Image')} />
                                 </div>
-                                <button onClick={() => setIsToolbarCollapsed(true)} className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors">
-                                    <MinusIcon className="w-5 h-5" />
-                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {node.type === 'LLM' && (
+                        <div className="space-y-2">
+                            <select 
+                                value={node.config.model}
+                                onChange={(e) => updateNodeConfig(node.id, 'model', e.target.value)}
+                                className="bg-zinc-900 border border-white/10 rounded w-full py-1.5 px-2 text-[10px] text-zinc-300 focus:outline-none focus:border-indigo-500"
+                            >
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
+                            </select>
+                            <Textarea 
+                                value={node.config.prompt}
+                                onChange={(e) => updateNodeConfig(node.id, 'prompt', e.target.value)}
+                                placeholder="System instructions..."
+                                className="bg-zinc-900 border-white/5 text-[10px] min-h-[80px] font-mono p-2"
+                            />
+                        </div>
+                    )}
+
+                    {node.type === 'IMAGE_GEN' && (
+                        <div className="space-y-2">
+                             <select 
+                                value={node.config.model}
+                                onChange={(e) => updateNodeConfig(node.id, 'model', e.target.value)}
+                                className="bg-zinc-900 border border-white/10 rounded w-full py-1.5 px-2 text-[10px] text-zinc-300 focus:outline-none focus:border-indigo-500"
+                            >
+                                <option value="nano-banana-pro">Nano Banana Pro</option>
+                                <option value="bytedance/seedream-v4-text-to-image">Seedream v4</option>
+                            </select>
+                            <div className="flex gap-1">
+                                {['1:1', '16:9', '9:16'].map(r => (
+                                    <button 
+                                        key={r}
+                                        onClick={() => updateNodeConfig(node.id, 'aspectRatio', r)}
+                                        className={`flex-1 py-1 rounded text-[9px] border transition-colors ${node.config.aspectRatio === r ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-zinc-900 border-white/5 text-zinc-500 hover:bg-white/5'}`}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
                             </div>
-                            <div className="space-y-3">
-                                <div className="bg-black/40 rounded-xl p-3 border border-white/5">
-                                    <div className="flex justify-between text-xs text-zinc-400 mb-1">
-                                        <span>GPU Usage</span>
-                                        <span className="text-white">32%</span>
+                            <Input 
+                                value={node.config.prompt}
+                                onChange={(e) => updateNodeConfig(node.id, 'prompt', e.target.value)}
+                                placeholder="Extra details..."
+                                className="bg-zinc-900 border-white/5 text-xs p-2"
+                            />
+                        </div>
+                    )}
+
+                    {/* Result Display */}
+                    {node.result && (
+                        <div className="mt-3 pt-3 border-t border-white/5 animate-fade-in">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[9px] font-bold uppercase text-emerald-500">Output</span>
+                                <button className="text-zinc-600 hover:text-white"><ArrowPathIcon className="w-3 h-3" /></button>
+                            </div>
+                            <div className="bg-black/40 rounded border border-white/5 overflow-hidden">
+                                {typeof node.result === 'string' && (node.result.startsWith('http') || node.result.startsWith('data:image')) ? (
+                                    <div className="relative group">
+                                        <img src={node.result} className="w-full h-32 object-contain bg-zinc-900/50" alt="Result"/>
+                                        <a href={node.result} download="result.png" className="absolute bottom-1 right-1 bg-black/60 text-white p-1 rounded hover:bg-black transition-colors">
+                                            <CursorArrowRaysIcon className="w-3 h-3" />
+                                        </a>
                                     </div>
-                                    <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                        <div className="h-full w-[32%] bg-indigo-500 rounded-full"></div>
+                                ) : (
+                                    <div className="p-2 max-h-32 overflow-y-auto custom-scrollbar">
+                                        <p className="text-[10px] text-zinc-300 font-mono whitespace-pre-wrap break-words leading-snug">
+                                            {typeof node.result === 'object' ? JSON.stringify(node.result, null, 2) : node.result}
+                                        </p>
                                     </div>
-                                </div>
-                                <p className="text-xs text-zinc-500 leading-relaxed">
-                                    Design your generation pipeline. Drag to pan, scroll to zoom. Connect nodes to chain AI models.
-                                </p>
+                                )}
                             </div>
-                            <div className="mt-6 flex gap-2">
-                                <Button size="sm" variant="secondary" onClick={() => setViewport({x: 0, y: 0, zoom: 1})} className="w-full justify-center bg-white/5 border-white/10 hover:bg-white/10 text-xs">
-                                    <ArrowPathIcon className="w-3.5 h-3.5 mr-2" /> Recenter
-                                </Button>
-                            </div>
+                        </div>
+                    )}
+                    
+                    {node.error && (
+                        <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-[10px] text-red-300 flex gap-2 items-start">
+                            <ExclamationTriangleIcon className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                            {node.error}
                         </div>
                     )}
                 </div>
             </div>
+        </div>
+    );
+});
 
-            {/* Navigation & Zoom Controls (Bottom Right) - Floating Glass */}
-            <div className="absolute bottom-8 right-8 z-50 flex flex-col gap-4 items-end">
-                 <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl flex flex-col gap-1 items-center">
-                     <button onClick={() => setViewport(p => ({...p, zoom: Math.min(p.zoom + 0.1, 2)}))} className="p-2.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors">
-                        <MagnifyingGlassPlusIcon className="w-5 h-5" />
-                     </button>
-                     <div className="w-8 h-px bg-white/10"></div>
-                     <span className="text-[10px] font-mono text-zinc-500 py-1 select-none">{Math.round(viewport.zoom * 100)}%</span>
-                     <div className="w-8 h-px bg-white/10"></div>
-                     <button onClick={() => setViewport(p => ({...p, zoom: Math.max(p.zoom - 0.1, 0.2)}))} className="p-2.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors">
-                        <MagnifyingGlassMinusIcon className="w-5 h-5" />
-                     </button>
+// --- Main Page ---
+
+const WorkflowBuilderPage: React.FC = () => {
+    const [nodes, setNodes] = useState<NodeData[]>([
+        { id: 'n1', type: 'INPUT_TEXT', x: 100, y: 100, label: 'Concept', inputs: [], outputs: NODE_DEFINITIONS.INPUT_TEXT.outputs, config: { value: 'A cyberpunk street' }, status: 'IDLE' },
+        { id: 'n2', type: 'LLM', x: 450, y: 100, label: 'Prompt Engineer', inputs: NODE_DEFINITIONS.LLM.inputs, outputs: NODE_DEFINITIONS.LLM.outputs, config: { model: 'gemini-2.5-flash', prompt: 'Describe this scene in high detail: {{input}}' }, status: 'IDLE' },
+        { id: 'n3', type: 'IMAGE_GEN', x: 800, y: 100, label: 'Renderer', inputs: NODE_DEFINITIONS.IMAGE_GEN.inputs, outputs: NODE_DEFINITIONS.IMAGE_GEN.outputs, config: { model: 'nano-banana-pro', aspectRatio: '16:9', prompt: '' }, status: 'IDLE' },
+    ]);
+    const [edges, setEdges] = useState<Edge[]>([
+        { id: 'e1', source: 'n1', sourceHandle: 'out', target: 'n2', targetHandle: 'in' },
+        { id: 'e2', source: 'n2', sourceHandle: 'out', target: 'n3', targetHandle: 'in' }
+    ]);
+
+    const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const [isRunning, setIsRunning] = useState(false);
+    const [tempConnection, setTempConnection] = useState<{ x1: number, y1: number, x2: number, y2: number, type: 'input'|'output' } | null>(null);
+    
+    const containerRef = useRef<HTMLDivElement>(null);
+    const dragState = useRef<DragState | null>(null);
+    const isSpacePressed = useRef(false);
+
+    // --- Coordinates ---
+    const screenToCanvas = useCallback((sx: number, sy: number) => {
+        if (!containerRef.current) return { x: 0, y: 0 };
+        const rect = containerRef.current.getBoundingClientRect();
+        return {
+            x: (sx - rect.left - viewport.x) / viewport.zoom,
+            y: (sy - rect.top - viewport.y) / viewport.zoom
+        };
+    }, [viewport]);
+
+    // --- Event Handlers ---
+
+    // Global Mouse Events for robustness
+    useEffect(() => {
+        const handleWindowMouseMove = (e: MouseEvent) => {
+            const currentDrag = dragState.current;
+            if (!currentDrag) return;
+
+            if (currentDrag.type === 'PAN') {
+                const dx = e.clientX - currentDrag.startX;
+                const dy = e.clientY - currentDrag.startY;
+                setViewport({
+                    ...currentDrag.initialViewport!,
+                    x: currentDrag.initialViewport!.x + dx,
+                    y: currentDrag.initialViewport!.y + dy
+                });
+            } 
+            else if (currentDrag.type === 'NODE') {
+                const dx = (e.clientX - currentDrag.startX) / viewport.zoom;
+                const dy = (e.clientY - currentDrag.startY) / viewport.zoom;
+                
+                let newX = currentDrag.initialNodePos!.x + dx;
+                let newY = currentDrag.initialNodePos!.y + dy;
+                
+                newX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
+                newY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+
+                // CRITICAL FIX: Capture nodeId here to prevent "cannot read properties of null" if state clears
+                const targetNodeId = currentDrag.nodeId!;
+                setNodes(prev => prev.map(n => n.id === targetNodeId ? { ...n, x: newX, y: newY } : n));
+            }
+            else if (currentDrag.type === 'CONNECTION') {
+                const currentCanvas = screenToCanvas(e.clientX, e.clientY);
+                setTempConnection(prev => prev ? { ...prev, x2: currentCanvas.x, y2: currentCanvas.y } : null);
+            }
+        };
+
+        const handleWindowMouseUp = (e: MouseEvent) => {
+            const currentDrag = dragState.current;
+            
+            if (currentDrag?.type === 'CONNECTION') {
+                // Connection Finalization Logic
+                const endCanvas = screenToCanvas(e.clientX, e.clientY);
+                const SNAP_RADIUS = 30;
+                let targetMatch: { nodeId: string, handleId: string, type: DataType } | null = null;
+
+                // Check against all potential handles
+                nodes.forEach(node => {
+                    if (node.id === currentDrag.sourceNodeId) return;
+
+                    const targetType = currentDrag.handleType === 'output' ? 'input' : 'output';
+                    const candidateHandles = targetType === 'input' ? node.inputs : node.outputs;
+
+                    candidateHandles.forEach(handle => {
+                        const pos = getHandleCoords(node.id, handle.id, targetType, nodes);
+                        const dist = Math.hypot(pos.x - endCanvas.x, pos.y - endCanvas.y);
+                        
+                        if (dist < SNAP_RADIUS) {
+                            // Type Validation (simple: any accepts all, otherwise exact match)
+                            const sourceHandleDef = currentDrag.handleType === 'output' 
+                                ? nodes.find(n=>n.id===currentDrag.sourceNodeId)?.outputs.find(h=>h.id===currentDrag.sourceHandleId)
+                                : nodes.find(n=>n.id===currentDrag.sourceNodeId)?.inputs.find(h=>h.id===currentDrag.sourceHandleId);
+                            
+                            const sourceType = sourceHandleDef?.type;
+                            
+                            if (handle.type === 'any' || sourceType === 'any' || handle.type === sourceType) {
+                                targetMatch = { nodeId: node.id, handleId: handle.id, type: handle.type };
+                            }
+                        }
+                    });
+                });
+
+                if (targetMatch) {
+                    const fromOutput = currentDrag.handleType === 'output';
+                    const newEdge: Edge = {
+                        id: `e_${Date.now()}`,
+                        source: fromOutput ? currentDrag.sourceNodeId! : targetMatch!.nodeId,
+                        sourceHandle: fromOutput ? currentDrag.sourceHandleId! : targetMatch!.handleId,
+                        target: fromOutput ? targetMatch!.nodeId : currentDrag.sourceNodeId!,
+                        targetHandle: fromOutput ? targetMatch!.handleId : currentDrag.sourceHandleId!
+                    };
+
+                    // Dupe check
+                    const exists = edges.some(edge => 
+                        edge.source === newEdge.source && edge.target === newEdge.target && 
+                        edge.sourceHandle === newEdge.sourceHandle && edge.targetHandle === newEdge.targetHandle
+                    );
+
+                    if (!exists) {
+                        setEdges(prev => [...prev, newEdge]);
+                    }
+                }
+            }
+
+            dragState.current = null;
+            setTempConnection(null);
+        };
+
+        window.addEventListener('mousemove', handleWindowMouseMove);
+        window.addEventListener('mouseup', handleWindowMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleWindowMouseMove);
+            window.removeEventListener('mouseup', handleWindowMouseUp);
+        };
+    }, [nodes, edges, viewport, screenToCanvas]);
+
+    // --- Input Handlers ---
+
+    const onMouseDownCanvas = (e: React.MouseEvent) => {
+        const isBackground = (e.target as HTMLElement).classList.contains('canvas-bg');
+        if (e.button === 1 || (e.button === 0 && isSpacePressed.current) || (e.button === 0 && isBackground)) {
+            e.preventDefault();
+            if(isBackground) setSelectedNodeId(null);
+            dragState.current = { type: 'PAN', startX: e.clientX, startY: e.clientY, initialViewport: { ...viewport } };
+        }
+    };
+
+    const onNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
+        if (e.button !== 0 || isSpacePressed.current) return;
+        e.stopPropagation();
+        setSelectedNodeId(nodeId);
+        const node = nodes.find(n => n.id === nodeId);
+        if (node) {
+            dragState.current = { type: 'NODE', startX: e.clientX, startY: e.clientY, nodeId, initialNodePos: { x: node.x, y: node.y } };
+        }
+    }, [nodes]);
+
+    const onHandleMouseDown = useCallback((e: React.MouseEvent, nodeId: string, handleId: string, type: 'input' | 'output') => {
+        e.stopPropagation();
+        const coords = getHandleCoords(nodeId, handleId, type, nodes);
+        dragState.current = { type: 'CONNECTION', startX: coords.x, startY: coords.y, sourceNodeId: nodeId, sourceHandleId: handleId, handleType: type };
+        const mouseCanvas = screenToCanvas(e.clientX, e.clientY);
+        setTempConnection({ x1: coords.x, y1: coords.y, x2: mouseCanvas.x, y2: mouseCanvas.y, type });
+    }, [nodes, screenToCanvas]);
+
+    const handleWheel = (e: React.WheelEvent) => {
+        const zoomIntensity = 0.001;
+        const newZoom = Math.min(Math.max(viewport.zoom - e.deltaY * zoomIntensity, 0.2), 2.5);
+        const rect = containerRef.current!.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left - viewport.x) / viewport.zoom;
+        const mouseY = (e.clientY - rect.top - viewport.y) / viewport.zoom;
+        const newX = e.clientX - rect.left - mouseX * newZoom;
+        const newY = e.clientY - rect.top - mouseY * newZoom;
+        setViewport({ x: newX, y: newY, zoom: newZoom });
+    };
+
+    // --- Logic ---
+
+    const updateNodeConfig = (id: string, key: string, value: any) => {
+        setNodes(prev => prev.map(n => n.id === id ? { ...n, config: { ...n.config, [key]: value } } : n));
+    };
+
+    const deleteNode = (id: string) => {
+        setNodes(prev => prev.filter(n => n.id !== id));
+        setEdges(prev => prev.filter(e => e.source !== id && e.target !== id));
+        if (selectedNodeId === id) setSelectedNodeId(null);
+    };
+
+    const addNode = (type: NodeType) => {
+        const container = containerRef.current;
+        const cx = container ? container.clientWidth / 2 : 500;
+        const cy = container ? container.clientHeight / 2 : 400;
+        const pos = screenToCanvas(container!.getBoundingClientRect().left + cx, container!.getBoundingClientRect().top + cy);
+        
+        const def = NODE_DEFINITIONS[type];
+        const newNode: NodeData = {
+            id: `n_${Date.now()}`,
+            type,
+            x: pos.x - NODE_WIDTH / 2,
+            y: pos.y - 50,
+            label: def.label,
+            inputs: JSON.parse(JSON.stringify(def.inputs)),
+            outputs: JSON.parse(JSON.stringify(def.outputs)),
+            config: JSON.parse(JSON.stringify(def.defaultConfig)),
+            status: 'IDLE'
+        };
+        setNodes(prev => [...prev, newNode]);
+    };
+
+    const runWorkflow = async () => {
+        if (isRunning) return;
+        setIsRunning(true);
+        setNodes(prev => prev.map(n => ({ ...n, status: 'IDLE', error: undefined })));
+
+        // Execution Graph
+        const graph = new Map<string, string[]>();
+        const inDegree = new Map<string, number>();
+        nodes.forEach(n => { graph.set(n.id, []); inDegree.set(n.id, 0); });
+        edges.forEach(e => {
+            if (graph.has(e.source) && inDegree.has(e.target)) {
+                graph.get(e.source)!.push(e.target);
+                inDegree.set(e.target, inDegree.get(e.target)! + 1);
+            }
+        });
+
+        const queue = nodes.filter(n => inDegree.get(n.id) === 0);
+        
+        try {
+            while (queue.length > 0) {
+                const current = queue.shift()!;
+                setNodes(prev => prev.map(n => n.id === current.id ? { ...n, status: 'RUNNING' } : n));
+                
+                // Gather Inputs
+                const incoming = edges.filter(e => e.target === current.id);
+                const inputValues = incoming.map(e => nodes.find(n => n.id === e.source)?.result).filter(v => v !== undefined);
+
+                // Execute
+                let result: any = null;
+                await new Promise(r => setTimeout(r, 800)); // Visual delay
+
+                if (current.type === 'INPUT_TEXT') result = current.config.value;
+                else if (current.type === 'INPUT_IMAGE') result = current.config.url;
+                else if (current.type === 'LLM') {
+                    const prompt = current.config.prompt.replace('{{input}}', inputValues.join('\n') || '');
+                    result = await aiService.generateContent('text', prompt);
+                }
+                else if (current.type === 'IMAGE_GEN') {
+                    let prompt = current.config.prompt || '';
+                    const context = inputValues.join(' ');
+                    prompt = prompt.includes('{{input}}') ? prompt.replace('{{input}}', context) : `${context} ${prompt}`;
+                    if (!prompt.trim()) prompt = "Abstract art";
+                    result = await aiService.generateImage(prompt, current.config.aspectRatio, current.config.model);
+                }
+                else if (current.type === 'VIEWER') result = inputValues[0];
+
+                setNodes(prev => prev.map(n => n.id === current.id ? { ...n, status: 'SUCCESS', result } : n));
+
+                // Queue neighbors
+                const neighbors = graph.get(current.id) || [];
+                for (const neighborId of neighbors) {
+                    inDegree.set(neighborId, inDegree.get(neighborId)! - 1);
+                    if (inDegree.get(neighborId) === 0) queue.push(nodes.find(n => n.id === neighborId)!);
+                }
+            }
+        } catch (e: any) {
+            setNodes(prev => prev.map(n => n.status === 'RUNNING' ? { ...n, status: 'ERROR', error: e.message } : n));
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    const getPath = (x1: number, y1: number, x2: number, y2: number) => {
+        const dist = Math.abs(x2 - x1);
+        const control = Math.max(dist * 0.5, 80);
+        return `M ${x1} ${y1} C ${x1 + control} ${y1}, ${x2 - control} ${y2}, ${x2} ${y2}`;
+    };
+
+    return (
+        <div className="flex h-[calc(100vh-4rem)] bg-[#050505] text-white overflow-hidden font-sans relative">
+            
+            {/* Toolbar */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-lg border border-white/10 p-1.5 rounded-xl shadow-2xl ring-1 ring-black/50">
+                <button 
+                    onClick={runWorkflow} 
+                    disabled={isRunning} 
+                    className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all shadow-lg ${isRunning ? 'bg-zinc-800 text-zinc-500' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'}`}
+                >
+                    {isRunning ? <StopIcon className="w-4 h-4 animate-pulse"/> : <PlayIcon className="w-4 h-4"/>}
+                    {isRunning ? 'Executing...' : 'Run Workflow'}
+                </button>
+                <div className="w-px h-6 bg-white/10 mx-2"></div>
+                <button onClick={() => setViewport(v => ({...v, zoom: Math.max(v.zoom - 0.1, 0.2)}))} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400"><MagnifyingGlassMinusIcon className="w-4 h-4"/></button>
+                <span className="text-[10px] font-mono text-zinc-500 w-10 text-center">{Math.round(viewport.zoom * 100)}%</span>
+                <button onClick={() => setViewport(v => ({...v, zoom: Math.min(v.zoom + 0.1, 3)}))} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400"><MagnifyingGlassPlusIcon className="w-4 h-4"/></button>
+            </div>
+
+            {/* Nodes Palette */}
+            <div className="absolute top-4 left-4 z-40 flex flex-col gap-2">
+                <div className="bg-zinc-900/90 backdrop-blur border border-white/10 rounded-xl p-2 shadow-2xl flex flex-col gap-2">
+                    {Object.entries(NODE_DEFINITIONS).map(([type, def]) => (
+                        <button 
+                            key={type}
+                            onClick={() => addNode(type as NodeType)}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-white transition-colors group w-40"
+                        >
+                            <div className={`p-1.5 rounded-md bg-opacity-10 ${def.color.split(' ')[1]}`}>
+                                <def.icon className={`w-4 h-4 ${def.color.split(' ')[2]}`} />
+                            </div>
+                            <span className="text-xs font-medium">{def.label}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Canvas Area */}
+            {/* Canvas */}
             <div 
                 ref={containerRef}
-                className={`w-full h-full cursor-default ${isPanning ? 'cursor-grabbing' : ''}`}
+                className="flex-1 relative overflow-hidden cursor-default canvas-bg outline-none"
+                onMouseDown={onMouseDownCanvas}
                 onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                tabIndex={0}
             >
+                {/* Dot Grid */}
                 <div 
-                    className="origin-top-left w-full h-full transition-transform duration-100 ease-out will-change-transform"
+                    className="absolute inset-0 pointer-events-none opacity-[0.15] canvas-bg"
                     style={{
-                        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+                        backgroundSize: `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
+                        backgroundPosition: `${viewport.x}px ${viewport.y}px`,
+                        backgroundImage: `radial-gradient(circle, #71717a 1px, transparent 1px)`
                     }}
-                >
-                    {/* SVG Gradients Definition */}
-                    <svg className="absolute w-0 h-0">
+                />
+
+                <div className="transform origin-top-left w-full h-full" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})` }}>
+                    {/* Edges Layer */}
+                    <svg className="absolute top-0 left-0 w-full h-full overflow-visible pointer-events-none z-0">
                         <defs>
-                            <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#818cf8" />
-                                <stop offset="100%" stopColor="#c084fc" />
+                            <linearGradient id="gradient-flow" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0" />
+                                <stop offset="50%" stopColor="#6366f1" stopOpacity="1" />
+                                <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
                             </linearGradient>
-                            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
-                            </pattern>
                         </defs>
-                    </svg>
+                        {edges.map(edge => {
+                            const start = getHandleCoords(edge.source, edge.sourceHandle, 'output', nodes);
+                            const end = getHandleCoords(edge.target, edge.targetHandle, 'input', nodes);
+                            const path = getPath(start.x, start.y, end.x, end.y);
+                            
+                            // Check if edge is active (source node succeeded)
+                            const sourceNode = nodes.find(n => n.id === edge.source);
+                            const isActive = sourceNode?.status === 'SUCCESS' || sourceNode?.status === 'RUNNING';
 
-                    {/* Technical Background */}
-                    <div 
-                        className="absolute -top-[10000px] -left-[10000px] w-[20000px] h-[20000px] pointer-events-none"
-                        style={{
-                            backgroundColor: '#050505',
-                            backgroundImage: 'radial-gradient(#27272a 1px, transparent 1px), radial-gradient(#18181b 1px, transparent 1px)',
-                            backgroundSize: '40px 40px, 200px 200px',
-                            backgroundPosition: '0 0, 20px 20px'
-                        }}
-                    ></div>
-
-                    {/* Connections Layer */}
-                    <svg className="absolute -top-[10000px] -left-[10000px] w-[20000px] h-[20000px] pointer-events-none overflow-visible" style={{zIndex: 0}}>
-                        <g transform="translate(10000, 10000)">
-                             {connections.map(renderConnection)}
-                        </g>
+                            return (
+                                <g key={edge.id} onClick={() => setEdges(edges.filter(e => e.id !== edge.id))} className="pointer-events-auto cursor-pointer group">
+                                    <path d={path} stroke="transparent" strokeWidth="20" fill="none" />
+                                    <path d={path} stroke="#27272a" strokeWidth="4" fill="none" />
+                                    <path 
+                                        d={path} 
+                                        stroke={isActive ? '#6366f1' : '#52525b'} 
+                                        strokeWidth="2" 
+                                        fill="none" 
+                                        className="transition-colors duration-500 group-hover:stroke-red-500" 
+                                    />
+                                    {isActive && (
+                                        <circle r="3" fill="#fff">
+                                            <animateMotion dur="1.5s" repeatCount="indefinite" path={path} keyPoints="0;1" keyTimes="0;1" calcMode="linear" />
+                                        </circle>
+                                    )}
+                                </g>
+                            );
+                        })}
+                        {tempConnection && (
+                            <path 
+                                d={getPath(tempConnection.x1, tempConnection.y1, tempConnection.x2, tempConnection.y2)} 
+                                stroke="#6366f1" strokeWidth="2" strokeDasharray="5,5" fill="none" className="animate-pulse" 
+                            />
+                        )}
                     </svg>
 
                     {/* Nodes Layer */}
-                    <div className="absolute top-0 left-0 w-0 h-0" style={{zIndex: 10}}>
-                        {nodes.map(node => (
-                            <div
-                                key={node.id}
-                                data-node-id={node.id}
-                                className={`absolute w-[340px] bg-[#09090b]/80 backdrop-blur-xl border rounded-2xl shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 group ${node.status === 'RUNNING' ? 'border-indigo-500/50 ring-1 ring-indigo-500/30' : node.status === 'ERROR' ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-white/10 hover:border-white/20'}`}
-                                style={{ 
-                                    transform: `translate(${node.x}px, ${node.y}px)`,
-                                    zIndex: draggingNode === node.id ? 100 : 10 
-                                }}
-                            >
-                                <NodeHeader type={node.type} title={node.title} status={node.status} />
-                                
-                                <div className="p-5 space-y-5 relative">
-                                    {node.errorMessage && (
-                                        <div className="bg-red-950/30 border border-red-500/20 p-3 rounded-lg flex items-start gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
-                                            <span className="text-[10px] text-red-300 leading-relaxed font-mono">{node.errorMessage}</span>
-                                        </div>
-                                    )}
+                    {nodes.map(node => (
+                        <NodeWidget 
+                            key={node.id} 
+                            node={node} 
+                            selected={selectedNodeId === node.id} 
+                            onMouseDown={onNodeMouseDown} 
+                            onHandleMouseDown={onHandleMouseDown} 
+                            updateNodeConfig={updateNodeConfig}
+                            deleteNode={deleteNode}
+                        />
+                    ))}
+                </div>
+            </div>
 
-                                    {(node.type === 'SCENE_GEN' || node.type === 'MODEL_SELECT') && (
-                                        <>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block font-mono">Prompt Logic</label>
-                                                <Textarea 
-                                                    value={node.data.prompt} 
-                                                    onChange={(e) => updateNodeData(node.id, { prompt: e.target.value })}
-                                                    className="text-xs bg-black/50 min-h-[80px] border-white/5 resize-y rounded-lg text-zinc-300 font-mono leading-relaxed focus:border-white/10 focus:bg-black/80 transition-colors"
-                                                    placeholder="Enter generation parameters..."
-                                                />
-                                            </div>
-                                            {node.data.result ? (
-                                                <div className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/50 aspect-video">
-                                                    <img src={node.data.result} className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                                                        <a href={node.data.result} target="_blank" rel="noreferrer" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors border border-white/10">
-                                                            <ArrowsPointingOutIcon className="w-5 h-5 text-white" />
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="aspect-video bg-black/20 rounded-lg border border-white/5 flex items-center justify-center border-dashed group-hover:border-white/10 transition-colors">
-                                                    <SparklesIcon className="w-6 h-6 text-zinc-800" />
-                                                </div>
-                                            )}
-                                            <Button 
-                                                size="sm" 
-                                                onClick={() => runImageGen(node)} 
-                                                isLoading={node.status === 'RUNNING'} 
-                                                className={`w-full py-2.5 text-xs font-medium ${node.status === 'COMPLETED' ? 'bg-zinc-800 border-white/5 text-zinc-300 hover:bg-zinc-700' : 'shadow-lg shadow-indigo-500/10'}`}
-                                            >
-                                                {node.status === 'COMPLETED' ? <span className="flex items-center"><ArrowPathIcon className="w-3 h-3 mr-2"/> Regenerate</span> : 'Execute Node'}
-                                            </Button>
-                                        </>
-                                    )}
-
-                                    {node.type === 'PRODUCT_ASSET' && (
-                                        <>
-                                            <div className="relative group">
-                                                {node.data.preview ? (
-                                                    <div className="relative rounded-lg overflow-hidden border border-white/10 bg-black/50">
-                                                        <img src={node.data.preview} className="w-full h-48 object-contain p-4" />
-                                                        <div className="absolute top-2 right-2">
-                                                            <button 
-                                                                className="p-1.5 bg-black/60 backdrop-blur rounded-lg border border-white/10 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    updateNodeData(node.id, { file: null, preview: null });
-                                                                    updateNode(node.id, { status: 'IDLE' });
-                                                                }}
-                                                            >
-                                                                <ArrowPathIcon className="w-3 h-3" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <label className="h-48 bg-black/20 rounded-xl border-2 border-dashed border-white/5 flex flex-col items-center justify-center gap-3 hover:bg-black/40 hover:border-indigo-500/30 transition-all cursor-pointer group/upload">
-                                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover/upload:scale-110 transition-transform duration-300">
-                                                            <ArrowUpOnSquareIcon className="w-5 h-5 text-zinc-500 group-hover/upload:text-indigo-400" />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <span className="text-xs text-zinc-300 font-medium block">Upload Asset</span>
-                                                            <span className="text-[10px] text-zinc-600">PNG, JPG, WEBP</span>
-                                                        </div>
-                                                        <input 
-                                                            type="file" 
-                                                            className="hidden"
-                                                            accept="image/*"
-                                                            onChange={(e) => {
-                                                                if (e.target.files?.[0]) {
-                                                                    updateNodeData(node.id, { 
-                                                                        file: e.target.files[0],
-                                                                        preview: URL.createObjectURL(e.target.files[0])
-                                                                    });
-                                                                    updateNode(node.id, { status: 'COMPLETED', errorMessage: undefined });
-                                                                }
-                                                            }}
-                                                        />
-                                                    </label>
-                                                )}
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {node.type === 'COMPOSITOR' && (
-                                        <>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block font-mono">Merge Instructions</label>
-                                                <Textarea 
-                                                    value={node.data.prompt} 
-                                                    onChange={(e) => updateNodeData(node.id, { prompt: e.target.value })}
-                                                    className="text-xs bg-black/50 min-h-[60px] border-white/5 rounded-lg font-mono"
-                                                    placeholder="Instructions..."
-                                                />
-                                            </div>
-                                            {node.data.result ? (
-                                                 <div className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/50 aspect-video">
-                                                    <img src={node.data.result} className="w-full h-full object-cover" />
-                                                </div>
-                                            ) : (
-                                                <div className="aspect-video bg-black/20 rounded-lg flex flex-col items-center justify-center text-zinc-700 text-[10px] font-bold tracking-widest border border-white/5 border-dashed">
-                                                    <ArrowsRightLeftIcon className="w-6 h-6 mb-2 opacity-20" />
-                                                    <span>AWAITING SIGNALS</span>
-                                                </div>
-                                            )}
-                                            <Button size="sm" onClick={() => runCompositor(node)} isLoading={node.status === 'RUNNING'} className="w-full py-2.5 text-xs font-medium shadow-lg shadow-violet-500/10">
-                                                Initialize Merge
-                                            </Button>
-                                        </>
-                                    )}
-
-                                    {node.type === 'VIDEO_GEN' && (
-                                        <>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block font-mono">Camera Control</label>
-                                                <Textarea 
-                                                    value={node.data.prompt} 
-                                                    onChange={(e) => updateNodeData(node.id, { prompt: e.target.value })}
-                                                    className="text-xs bg-black/50 min-h-[60px] border-white/5 rounded-lg font-mono"
-                                                />
-                                            </div>
-                                             {node.data.result ? (
-                                                <video src={node.data.result} controls autoPlay loop className="w-full h-40 object-cover rounded-lg border border-white/10 bg-black" />
-                                            ) : (
-                                                <div className="h-40 bg-black/20 rounded-lg flex items-center justify-center text-zinc-700 text-[10px] font-bold tracking-widest border border-white/5 border-dashed">
-                                                    <VideoCameraIcon className="w-8 h-8 mb-2 opacity-20" />
-                                                </div>
-                                            )}
-                                            <Button size="sm" onClick={() => runVideoGen(node)} isLoading={node.status === 'RUNNING'} className="w-full py-2.5 text-xs font-medium shadow-lg shadow-orange-500/10">
-                                                <PlayIcon className="w-3 h-3 mr-2" /> Render Sequence
-                                            </Button>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Connection Ports - Styled */}
-                                <div className="absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-4 bg-zinc-800 rounded-full border-2 border-zinc-600 hover:bg-white hover:border-indigo-500 hover:scale-125 transition-all cursor-pointer shadow-lg" title="Input"></div>
-                                <div className="absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-4 bg-zinc-800 rounded-full border-2 border-zinc-600 hover:bg-white hover:border-indigo-500 hover:scale-125 transition-all cursor-pointer shadow-lg" title="Output"></div>
-                            </div>
-                        ))}
-                    </div>
+            {/* Minimap */}
+            <div className="absolute bottom-6 right-6 z-40 w-48 h-32 bg-zinc-900/80 backdrop-blur border border-white/10 rounded-lg overflow-hidden shadow-2xl pointer-events-none">
+                <div className="relative w-full h-full opacity-50">
+                    {nodes.map(n => (
+                        <div 
+                            key={n.id} 
+                            className={`absolute w-2 h-1 rounded-sm ${n.status === 'SUCCESS' ? 'bg-emerald-500' : n.status === 'ERROR' ? 'bg-red-500' : 'bg-zinc-500'}`}
+                            style={{
+                                left: `${(n.x / 3000) * 100 + 20}%`, // Crude approximation for demo
+                                top: `${(n.y / 2000) * 100 + 20}%`
+                            }}
+                        />
+                    ))}
                 </div>
             </div>
         </div>
