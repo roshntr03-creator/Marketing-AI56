@@ -1,12 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
 import { Textarea } from '../components/ui/Input';
-import Card from '../components/ui/Card';
 import aiService from '../services/aiService';
 import { 
-    PhotoIcon, 
     SparklesIcon, 
     SwatchIcon, 
     Square2StackIcon, 
@@ -16,7 +14,10 @@ import {
     BoltIcon,
     ClockIcon,
     PaintBrushIcon,
-    CpuChipIcon
+    CpuChipIcon,
+    PhotoIcon,
+    RectangleStackIcon,
+    MagnifyingGlassPlusIcon
 } from '@heroicons/react/24/outline';
 
 const MODELS = [
@@ -53,10 +54,12 @@ const ImageGeneratorPage: React.FC = () => {
     const [aspectRatio, setAspectRatio] = useState('1:1');
     const [selectedStyle, setSelectedStyle] = useState(STYLES[0].id);
     const [selectedModel, setSelectedModel] = useState(MODELS[0].id);
+    const [numImages, setNumImages] = useState(1);
     
     // UI State
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     
     // Animation State
     const [progress, setProgress] = useState(0);
@@ -67,6 +70,13 @@ const ImageGeneratorPage: React.FC = () => {
     const currentJob = creations.find(c => c.id === currentJobId);
     const isGenerating = currentJob?.status === 'Generating' || currentJob?.status === 'Pending';
     const displayedImage = currentJob?.status === 'Completed' ? currentJob.resultUrl : (currentJobId ? null : recentImages[0]?.resultUrl);
+
+    // Reset count when model changes if not Grok 3
+    useEffect(() => {
+        if (selectedModel !== 'grok-imagine/text-to-image') {
+            setNumImages(1);
+        }
+    }, [selectedModel]);
 
     // Progress Simulation Effect
     useEffect(() => {
@@ -125,7 +135,7 @@ const ImageGeneratorPage: React.FC = () => {
             id: jobId,
             type: 'IMAGE',
             title: prompt.substring(0, 40),
-            params: { prompt: finalPrompt, aspectRatio, model: selectedModel },
+            params: { prompt: finalPrompt, aspectRatio, model: selectedModel, numImages },
             status: 'Pending'
         });
         
@@ -197,6 +207,26 @@ const ImageGeneratorPage: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Grok 3 Specific: Image Count */}
+                    {selectedModel === 'grok-imagine/text-to-image' && (
+                        <div className="space-y-3 animate-fade-in">
+                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                                <RectangleStackIcon className="w-3 h-3"/> Image Count
+                            </label>
+                            <div className="flex gap-1 bg-zinc-950 p-1 rounded-lg border border-white/5">
+                                {[1, 2, 3, 4, 5, 6].map((n) => (
+                                    <button
+                                        key={n}
+                                        onClick={() => setNumImages(n)}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${numImages === n ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Aspect Ratio */}
                     <div className="space-y-3">
                          <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
@@ -255,7 +285,7 @@ const ImageGeneratorPage: React.FC = () => {
                         className="w-full py-4 text-base shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300"
                     >
                         <PaintBrushIcon className="w-5 h-5 mr-2" />
-                        Generate Artwork
+                        Generate {numImages > 1 ? `(${numImages})` : ''} Artwork
                     </Button>
                 </div>
             </div>
@@ -287,11 +317,21 @@ const ImageGeneratorPage: React.FC = () => {
                              </div>
                         </div>
                         {displayedImage && !isGenerating && (
-                            <a href={displayedImage} download={`creation-${Date.now()}.png`}>
-                                <Button size="sm" variant="secondary" className="h-8 text-xs gap-1 bg-white/5 border-white/10 hover:bg-white/10">
-                                    <ArrowDownTrayIcon className="w-3 h-3" /> Download
+                            <div className="flex gap-2">
+                                <Button 
+                                    size="sm" 
+                                    variant="secondary" 
+                                    onClick={() => setLightboxImage(displayedImage)}
+                                    className="h-8 text-xs gap-1 bg-white/5 border-white/10 hover:bg-white/10"
+                                >
+                                    <MagnifyingGlassPlusIcon className="w-3 h-3" /> View
                                 </Button>
-                            </a>
+                                <a href={displayedImage} download={`creation-${Date.now()}.png`}>
+                                    <Button size="sm" variant="secondary" className="h-8 text-xs gap-1 bg-white/5 border-white/10 hover:bg-white/10">
+                                        <ArrowDownTrayIcon className="w-3 h-3" /> Download
+                                    </Button>
+                                </a>
+                            </div>
                         )}
                     </div>
 
@@ -301,7 +341,8 @@ const ImageGeneratorPage: React.FC = () => {
 
                          {/* Image Container */}
                          <div 
-                            className={`relative shadow-2xl transition-all duration-500 ease-in-out bg-black ring-1 ring-white/10 overflow-hidden mx-auto flex items-center justify-center max-h-full max-w-full`}
+                            className={`relative shadow-2xl transition-all duration-500 ease-in-out bg-black ring-1 ring-white/10 overflow-hidden mx-auto flex items-center justify-center max-h-full max-w-full ${displayedImage && !isGenerating ? 'cursor-zoom-in hover:ring-indigo-500/50' : ''}`}
+                            onClick={() => !isGenerating && displayedImage && setLightboxImage(displayedImage)}
                             style={{
                                 aspectRatio: aspectRatio.replace(':', '/')
                             }}
@@ -390,6 +431,34 @@ const ImageGeneratorPage: React.FC = () => {
                 </div>
 
             </div>
+
+            {/* Lightbox Viewer */}
+            <Modal 
+                isOpen={!!lightboxImage} 
+                onClose={() => setLightboxImage(null)} 
+                title="High Resolution Preview"
+                maxWidth="max-w-7xl"
+            >
+                <div className="flex flex-col h-full justify-center items-center gap-6">
+                    <div className="relative flex-1 w-full flex items-center justify-center overflow-hidden rounded-lg bg-black/50 border border-white/10 min-h-[60vh]">
+                        {lightboxImage && (
+                            <img src={lightboxImage} alt="Full Preview" className="max-w-full max-h-[75vh] object-contain shadow-2xl" />
+                        )}
+                    </div>
+                    <div className="flex gap-4">
+                        {lightboxImage && (
+                            <a href={lightboxImage} download={`image-${Date.now()}.png`}>
+                                <Button size="lg" leftIcon={<ArrowDownTrayIcon className="w-5 h-5"/>}>
+                                    Download Image
+                                </Button>
+                            </a>
+                        )}
+                        <Button variant="secondary" size="lg" onClick={() => setLightboxImage(null)}>
+                            Close Viewer
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

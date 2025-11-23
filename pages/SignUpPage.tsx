@@ -43,7 +43,7 @@ const SignUpPage: React.FC = () => {
 
       <div className="w-full max-w-md z-10 px-4 py-8">
         <div className="text-center mb-8">
-          <Logo href="/" className="inline-flex justify-center mb-6" iconClassName="w-8 h-8" textClassName="text-xl text-white" />
+          <Logo href="/" className="inline-flex justify-center mb-6" textClassName="text-xl text-white" />
           <h2 className="text-2xl font-semibold text-white tracking-tight">Create your account</h2>
           <p className="text-zinc-500 text-sm mt-2">Start building your marketing engine.</p>
         </div>

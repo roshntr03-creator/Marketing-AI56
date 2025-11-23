@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
-import { LogoIcon } from '../components/ui/LogoIcon';
 import { 
     ArrowRightIcon, 
     CheckCircleIcon, 
     CubeIcon, 
     ChartBarIcon, 
-    SwatchIcon,
+    SwatchIcon, 
     PlayIcon,
     VideoCameraIcon,
     SparklesIcon,
@@ -334,13 +333,6 @@ const LandingPage: React.FC = () => {
                     </div>
 
                     <div className="relative z-10 flex flex-col items-center">
-                        {/* Animated Logo */}
-                        <div className="w-24 h-24 mb-8 relative">
-                            <div className="absolute inset-0 bg-indigo-500/30 blur-xl rounded-full animate-ping" style={{animationDuration: '2s'}}></div>
-                            <div className="relative z-10 animate-[float_3s_ease-in-out_infinite]">
-                                 <LogoIcon className="w-full h-full text-white drop-shadow-[0_0_25px_rgba(99,102,241,1)]" />
-                            </div>
-                        </div>
                         
                         {/* Animated Text */}
                         <h1 className="text-5xl font-bold font-display text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tight animate-[fadeInUp_0.8s_cubic-bezier(0.16,1,0.3,1)_forwards]">
@@ -364,8 +356,8 @@ const LandingPage: React.FC = () => {
 
             {/* Navbar */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <Logo href="/" iconClassName="w-8 h-8" textClassName="text-lg font-bold tracking-tight text-white" />
+                <div className="w-full px-6 md:px-12 h-20 flex items-center justify-between">
+                    <Logo href="/" textClassName="text-xl font-bold tracking-tight text-white font-display" />
                     <div className="flex items-center gap-8">
                         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-400">
                             <a href="#features" className="hover:text-white transition-colors">Platform</a>

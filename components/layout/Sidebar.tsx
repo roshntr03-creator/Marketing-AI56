@@ -16,7 +16,7 @@ const Sidebar: React.FC = () => {
         <aside className={`fixed inset-y-0 left-0 w-64 bg-[#050505] border-r border-white/5 z-40 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <div className="flex flex-col h-full">
                 <div className="h-16 flex items-center px-6 flex-shrink-0 border-b border-white/5">
-                    <Logo href="/dashboard" iconClassName="w-6 h-6 text-indigo-500" textClassName="text-base text-white tracking-tight font-display font-bold" />
+                    <Logo href="/dashboard" textClassName="text-base text-white tracking-tight font-display font-bold" />
                 </div>
 
                 <nav className="flex-1 px-3 py-6 space-y-8 overflow-y-auto scrollbar-none">

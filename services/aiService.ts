@@ -19,8 +19,8 @@ export const ensureVeoKey = async (): Promise<void> => {
     }
 };
 
-// Helper for Kie AI Tasks
-const runKieTask = async (model: string, input: any) => {
+// Helper for Kie AI Tasks - Updated to return array of strings
+const runKieTask = async (model: string, input: any): Promise<string[]> => {
     const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
         method: 'POST',
         headers: {
@@ -46,7 +46,7 @@ const runKieTask = async (model: string, input: any) => {
         if (statusData.data.state === 'fail') throw new Error(statusData.data.failMsg || 'Generation failed');
         if (statusData.data.state === 'success') {
              const resultJson = JSON.parse(statusData.data.resultJson);
-             return resultJson.resultUrls?.[0] || '';
+             return resultJson.resultUrls || [];
         }
     }
 };
@@ -177,12 +177,13 @@ const aiService = {
 
     const model = params.model || 'sora-2-text-to-video';
 
-    return runKieTask(model, {
+    const results = await runKieTask(model, {
         prompt: prompt,
         aspect_ratio: 'portrait',
         n_frames: n_frames,
         remove_watermark: true
     });
+    return results[0] || '';
   },
 
   generatePromoVideo: async (params: any): Promise<string> => {
@@ -214,18 +215,19 @@ const aiService = {
          if (params.aspectRatio === '16:9') grokAr = '3:2';
          if (params.aspectRatio === '9:16') grokAr = '2:3';
          
-         return runKieTask(model, {
+         const results = await runKieTask(model, {
              prompt: finalPrompt,
              aspect_ratio: grokAr,
              mode: 'normal',
          });
+         return results[0] || '';
     }
 
     // Sora Logic (10s or 15s)
     const ar = params.aspectRatio === '9:16' ? 'portrait' : params.aspectRatio === '1:1' ? 'square' : 'landscape';
     const n_frames = params.duration === '15s' ? '15' : '10';
 
-    return runKieTask(model, {
+    const results = await runKieTask(model, {
         prompt: finalPrompt,
         negative_prompt: params.negativePrompt || "blur, distortion, watermark, text, low quality, ugly, bad hands",
         aspect_ratio: ar,
@@ -233,20 +235,20 @@ const aiService = {
         remove_watermark: true,
         seed: params.seed ? parseInt(params.seed) : undefined
     });
+    return results[0] || '';
   },
 
   // Mock function to simulate video editing/rendering
   exportVideoWithEdits: async (originalUrl: string, edits: any): Promise<string> => {
-      // In a real backend, this would send the timeline data, overlays, and filters to a render server.
-      // For now, we simulate a "rendering" delay and return the original (or a modified mock).
       await new Promise(resolve => setTimeout(resolve, 3000));
-      return originalUrl; // Just passing through for demo
+      return originalUrl;
   },
 
-  generateImage: async (prompt: string, aspectRatio: string, model: string = 'bytedance/seedream-v4-text-to-image'): Promise<string> => {
+  generateImage: async (prompt: string, aspectRatio: string, model: string = 'bytedance/seedream-v4-text-to-image', numImages: number = 1): Promise<string[]> => {
     // 1. Gemini Flash
     if (model === 'gemini-2.5-flash-image') {
-        return aiService.generateFastImage(prompt);
+        const url = await aiService.generateFastImage(prompt);
+        return [url];
     }
 
     // 2. Grok Imagine
@@ -256,20 +258,25 @@ const aiService = {
         if (aspectRatio === '16:9' || aspectRatio === '4:3') ar = '3:2';
         if (aspectRatio === '9:16' || aspectRatio === '3:4') ar = '2:3';
         
-        return runKieTask(model, {
+        const urls = await runKieTask(model, {
             prompt,
-            aspect_ratio: ar
+            aspect_ratio: ar,
+            image_num: numImages,
+            num_images: numImages // Some variants use different casing
         });
+        // STRICTLY LIMIT OUTPUT: Only return the requested number of images
+        return urls.slice(0, numImages);
     }
 
     // 3. Nano Banana Pro
     if (model === 'nano-banana-pro') {
-        return runKieTask(model, {
+        const urls = await runKieTask(model, {
             prompt,
-            aspect_ratio: aspectRatio, // Supports all common ratios directly (1:1, 16:9, 9:16 etc)
+            aspect_ratio: aspectRatio,
             resolution: '2K',
             output_format: 'png'
         });
+        return urls.slice(0, 1);
     }
 
     // 4. Seedream v4 (Default Fallback)
@@ -283,13 +290,14 @@ const aiService = {
         };
         const imageSize = sizeMap[aspectRatio] || 'square_hd';
         
-        return runKieTask(model, {
+        const urls = await runKieTask(model, {
             prompt,
             image_size: imageSize,
             image_resolution: '2K',
             max_images: 1,
             seed: Math.floor(Math.random() * 1000000)
         });
+        return urls.slice(0, 1);
     }
 
     throw new Error("Unsupported model");

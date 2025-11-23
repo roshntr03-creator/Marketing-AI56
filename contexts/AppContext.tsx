@@ -139,7 +139,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             } 
             else if (pendingJob.type === 'IMAGE') {
                 // Pass model parameter from params
-                resultUrl = await aiService.generateImage(params.prompt, params.aspectRatio, params.model);
+                const resultUrls = await aiService.generateImage(params.prompt, params.aspectRatio, params.model, params.numImages);
+                resultUrl = resultUrls[0];
+                
+                // Handle multiple images if any
+                if (resultUrls.length > 1) {
+                    // Add extra jobs for the other images so they appear in gallery
+                    resultUrls.slice(1).forEach((extraUrl, idx) => {
+                        addCreation({
+                            type: 'IMAGE',
+                            title: `${pendingJob.title} (${idx + 2})`,
+                            params: pendingJob.params,
+                            status: 'Completed',
+                            resultUrl: extraUrl
+                        });
+                    });
+                }
             } else if (pendingJob.type === 'CONTENT') {
                 // Pass full params object for new signature
                 resultText = await aiService.generateContent({
