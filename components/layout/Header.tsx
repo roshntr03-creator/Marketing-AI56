@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ChatBubbleLeftEllipsisIcon, Bars3Icon } from '@heroicons/react/24/solid';
 import { useAppContext } from '../../contexts/AppContext';
@@ -11,11 +12,11 @@ const Header: React.FC = () => {
         <>
             <header className="bg-background-dark-soft/50 backdrop-blur-sm sticky top-0 z-20 border-b border-border-dark">
                 <div className="px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
-                    {/* Hamburger Menu for mobile */}
+                    {/* Sidebar Toggle Button - Visible on all screens */}
                     <button 
                         onClick={toggleSidebar}
-                        className="lg:hidden text-text-secondary hover:text-text-primary"
-                        aria-label="Open sidebar"
+                        className="text-text-secondary hover:text-text-primary p-2 rounded-md hover:bg-white/5 transition-colors mr-4"
+                        aria-label="Toggle sidebar"
                     >
                         <Bars3Icon className="w-6 h-6" />
                     </button>

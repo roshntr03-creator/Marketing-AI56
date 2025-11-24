@@ -14,18 +14,16 @@ import {
     Cog6ToothIcon,
     CpuChipIcon,
     VideoCameraIcon,
-    ArrowsPointingOutIcon,
-    ArrowsRightLeftIcon,
-    PlusIcon,
     NoSymbolIcon,
     AdjustmentsHorizontalIcon,
-    ArrowPathIcon,
     PlayIcon,
     PauseIcon,
     StopIcon,
     PencilSquareIcon,
     TrashIcon,
-    SpeakerWaveIcon
+    SpeakerWaveIcon,
+    PlusIcon,
+    ScissorsIcon
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '../contexts/AppContext';
 import aiService from '../services/aiService';
@@ -130,7 +128,6 @@ const PromoVideosPage: React.FC = () => {
                 
                 if (parsed.currentJobId) {
                     setCurrentJobId(parsed.currentJobId);
-                    // If we have a job ID, we assume we might want to be in editor mode if it's done
                     const job = creations.find(c => c.id === parsed.currentJobId);
                     if (job?.status === 'Completed') {
                         setEditorMode(true);
@@ -140,7 +137,7 @@ const PromoVideosPage: React.FC = () => {
                 console.error("Failed to load saved state", e);
             }
         }
-    }, [creations]); // Depend on creations to check status
+    }, [creations]);
 
     // --- 2. Persistence Logic (Save on Change) ---
     useEffect(() => {
@@ -512,41 +509,64 @@ const PromoVideosPage: React.FC = () => {
 
             {/* Right Panel: Viewport & Editor */}
             <div className="w-full lg:w-8/12 h-full flex flex-col animate-fade-in">
-                <div className="flex-1 bg-[#050505] rounded-2xl border border-white/10 relative overflow-hidden flex flex-col shadow-2xl">
+                <div className="flex-1 bg-[#09090b] rounded-2xl border border-white/10 relative overflow-hidden flex flex-col shadow-2xl">
                     
-                    {/* Editor Header */}
-                    <div className="h-14 border-b border-white/5 bg-zinc-900/50 flex items-center px-6 justify-between backdrop-blur-md z-20 flex-shrink-0">
-                         {editorMode ? (
-                             <div className="flex items-center gap-4 text-white">
-                                <span className="text-sm font-bold font-display tracking-wide">Editor</span>
-                                <div className="h-4 w-px bg-white/10"></div>
-                                <div className="flex gap-2">
-                                    <button onClick={addTextOverlay} className="p-1.5 hover:bg-white/10 rounded text-zinc-400 hover:text-white" title="Add Text"><PencilSquareIcon className="w-4 h-4" /></button>
-                                    <button onClick={() => setActiveFilter('grayscale')} className="p-1.5 hover:bg-white/10 rounded text-zinc-400 hover:text-white" title="Filter"><SwatchIcon className="w-4 h-4" /></button>
-                                </div>
+                    {/* Top Toolbar */}
+                    <div className="h-16 border-b border-white/5 bg-zinc-900/50 flex items-center px-6 justify-between backdrop-blur-md z-20 flex-shrink-0">
+                         <div className="flex items-center gap-4">
+                             <div className="flex gap-2">
+                                 {editorMode ? (
+                                     <>
+                                        <Button size="sm" variant="ghost" onClick={addTextOverlay} className="bg-zinc-800/50 border border-white/5 text-zinc-300 hover:text-white hover:bg-zinc-800">
+                                            <PencilSquareIcon className="w-4 h-4 mr-1.5"/> Add Text
+                                        </Button>
+                                        <div className="relative group">
+                                            <Button size="sm" variant="ghost" className="bg-zinc-800/50 border border-white/5 text-zinc-300 hover:text-white hover:bg-zinc-800">
+                                                <SwatchIcon className="w-4 h-4 mr-1.5"/> Filters
+                                            </Button>
+                                            <div className="absolute top-full left-0 mt-2 w-40 bg-zinc-900 border border-white/10 rounded-lg shadow-xl hidden group-hover:block z-50 py-2">
+                                                {['none', 'grayscale', 'sepia', 'high-contrast', 'warm', 'cool'].map(f => (
+                                                    <button key={f} onClick={() => setActiveFilter(f as EditorFilter)} className="block w-full text-left px-4 py-2 text-xs text-zinc-400 hover:text-white hover:bg-white/5 capitalize">{f}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                     </>
+                                 ) : (
+                                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Preview Mode</span>
+                                 )}
                              </div>
-                         ) : (
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                                    {aspectRatio === '16:9' ? 'Landscape' : aspectRatio === '9:16' ? 'Portrait' : 'Square'} • {duration}
-                                </span>
-                            </div>
-                         )}
+                         </div>
                          
-                         {generatedVideoUrl && (
-                            <Button size="sm" variant="secondary" onClick={handleExportEdit} isLoading={isRenderingEdit} className="h-8 text-xs gap-1 bg-white/5 border-white/10 hover:bg-white/10">
-                                <ArrowDownTrayIcon className="w-3 h-3" /> {editorMode ? 'Render & Export' : 'Export'}
-                            </Button>
-                         )}
+                         <div className="flex items-center gap-4">
+                             {generatedVideoUrl && (
+                                <span className="text-xs font-mono text-zinc-500 bg-black/30 px-3 py-1.5 rounded border border-white/5">
+                                    {currentTime.toFixed(2)}s / {videoDuration.toFixed(2)}s
+                                </span>
+                             )}
+                             {generatedVideoUrl && (
+                                <Button size="sm" variant="primary" onClick={handleExportEdit} isLoading={isRenderingEdit} className="h-8 text-xs gap-1 shadow-lg shadow-indigo-500/20">
+                                    <ArrowDownTrayIcon className="w-3 h-3 mr-1.5" /> {editorMode ? 'Export Project' : 'Download'}
+                                </Button>
+                             )}
+                         </div>
                     </div>
 
                     {/* Canvas Stage */}
-                    <div className="flex-1 relative flex flex-col bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-zinc-950/90 overflow-hidden">
-                         <div className="flex-1 relative flex items-center justify-center p-4">
+                    <div className="flex-1 relative flex flex-col bg-zinc-950 overflow-hidden">
+                         {/* Checkerboard Background */}
+                         <div className="absolute inset-0 opacity-20 pointer-events-none" 
+                              style={{
+                                  backgroundImage: `linear-gradient(45deg, #27272a 25%, transparent 25%), linear-gradient(-45deg, #27272a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #27272a 75%), linear-gradient(-45deg, transparent 75%, #27272a 75%)`,
+                                  backgroundSize: '20px 20px',
+                                  backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                              }}
+                         ></div>
+
+                         <div className="flex-1 relative flex items-center justify-center p-8">
                             {/* Video Container */}
                             <div 
-                                className={`relative shadow-2xl transition-all duration-500 ease-in-out bg-black ring-1 ring-white/10 overflow-hidden mx-auto flex items-center justify-center ${
-                                    aspectRatio === '16:9' ? 'w-full aspect-video max-w-5xl max-h-[calc(100%-2rem)]' : 
+                                className={`relative shadow-2xl transition-all duration-500 ease-in-out bg-black overflow-hidden mx-auto flex items-center justify-center group ${
+                                    aspectRatio === '16:9' ? 'w-full aspect-video max-w-4xl max-h-[calc(100%-2rem)]' : 
                                     aspectRatio === '9:16' ? 'h-full aspect-[9/16] max-h-[calc(100%-2rem)]' : 
                                     'h-full aspect-square max-h-[calc(100%-2rem)]'
                                 }`}
@@ -580,7 +600,7 @@ const PromoVideosPage: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : generatedVideoUrl ? (
-                                    <div className="relative w-full h-full">
+                                    <div className="relative w-full h-full shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                                         <video 
                                             ref={videoRef}
                                             src={generatedVideoUrl} 
@@ -593,102 +613,168 @@ const PromoVideosPage: React.FC = () => {
                                         {overlays.map(overlay => (
                                             <div 
                                                 key={overlay.id}
-                                                className="absolute cursor-move group"
+                                                className="absolute cursor-move group/overlay"
                                                 style={{ top: `${overlay.y}%`, left: `${overlay.x}%`, transform: 'translate(-50%, -50%)' }}
                                             >
-                                                <input 
-                                                    value={overlay.text}
-                                                    onChange={(e) => updateOverlay(overlay.id, { text: e.target.value })}
-                                                    className="bg-transparent border-2 border-transparent hover:border-indigo-500 focus:border-indigo-500 text-white font-bold text-xl outline-none text-center w-auto min-w-[100px] shadow-black drop-shadow-md"
-                                                    style={{ color: overlay.color }}
-                                                />
-                                                <button 
-                                                    onClick={() => removeOverlay(overlay.id)}
-                                                    className="absolute -top-4 -right-4 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <TrashIcon className="w-3 h-3" />
-                                                </button>
+                                                <div className="relative p-2 border-2 border-transparent hover:border-indigo-500 rounded transition-colors">
+                                                    <input 
+                                                        value={overlay.text}
+                                                        onChange={(e) => updateOverlay(overlay.id, { text: e.target.value })}
+                                                        className="bg-transparent border-none focus:ring-0 text-white font-bold text-2xl outline-none text-center w-auto min-w-[100px] shadow-black drop-shadow-md font-display"
+                                                        style={{ color: overlay.color }}
+                                                    />
+                                                    <button 
+                                                        onClick={() => removeOverlay(overlay.id)}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover/overlay:opacity-100 transition-opacity shadow-sm"
+                                                    >
+                                                        <TrashIcon className="w-3 h-3" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
+                                        
+                                        {/* Play/Pause Overlay Indicator */}
+                                        {!isPlaying && (
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+                                                <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 shadow-2xl">
+                                                    <PlayIcon className="w-8 h-8 text-white ml-1" />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-800">
-                                        <FilmIcon className="w-20 h-20 opacity-20 mb-4" />
-                                        <p className="text-sm font-medium text-zinc-600 uppercase tracking-widest">No Video Loaded</p>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 border-2 border-dashed border-zinc-800 rounded-xl m-8 bg-zinc-900/50">
+                                        <div className="p-6 bg-zinc-900 rounded-full mb-4 shadow-inner">
+                                            <FilmIcon className="w-12 h-12 opacity-50" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-zinc-300">No Video Loaded</h3>
+                                        <p className="text-sm mt-2 max-w-xs text-center opacity-60">Generate a video using the panel on the left to start editing.</p>
                                     </div>
                                 )}
                             </div>
                          </div>
 
-                        {/* Timeline / Editor Controls */}
+                        {/* Timeline Panel */}
                         {editorMode && generatedVideoUrl && (
-                            <div className="h-48 bg-zinc-900 border-t border-white/10 flex flex-col">
-                                {/* Transport Controls */}
-                                <div className="h-10 border-b border-white/5 flex items-center px-4 justify-between bg-black/20">
-                                    <div className="flex items-center gap-3 text-zinc-400">
-                                        <button onClick={togglePlay} className="hover:text-white">
-                                            {isPlaying ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
-                                        </button>
-                                        <button onClick={() => { if(videoRef.current) videoRef.current.currentTime = 0; }} className="hover:text-white">
-                                            <StopIcon className="w-4 h-4" />
-                                        </button>
-                                        <span className="text-xs font-mono ml-2">{currentTime.toFixed(1)}s / {videoDuration.toFixed(1)}s</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                         <select 
-                                            value={activeFilter} 
-                                            onChange={(e) => setActiveFilter(e.target.value as EditorFilter)}
-                                            className="bg-zinc-800 text-xs text-zinc-300 rounded border border-white/5 px-2 py-1 outline-none"
-                                         >
-                                             <option value="none">No Filter</option>
-                                             <option value="grayscale">Grayscale</option>
-                                             <option value="sepia">Sepia</option>
-                                             <option value="high-contrast">High Contrast</option>
-                                             <option value="warm">Warm</option>
-                                             <option value="cool">Cool</option>
-                                         </select>
+                            <div className="h-64 bg-[#09090b] border-t border-white/10 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] relative z-30">
+                                {/* Timeline Toolbar */}
+                                <div className="h-10 border-b border-white/5 flex items-center px-4 justify-between bg-zinc-900">
+                                    <div className="flex items-center gap-4 text-zinc-400">
+                                        <div className="flex items-center gap-1">
+                                            <button onClick={togglePlay} className="p-1.5 hover:text-white hover:bg-white/5 rounded transition-colors">
+                                                {isPlaying ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
+                                            </button>
+                                            <button onClick={() => { if(videoRef.current) videoRef.current.currentTime = 0; }} className="p-1.5 hover:text-white hover:bg-white/5 rounded transition-colors">
+                                                <StopIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="h-4 w-px bg-white/10"></div>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <ScissorsIcon className="w-4 h-4" />
+                                            <span>Split</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Timeline Tracks */}
-                                <div className="flex-1 p-4 space-y-2 overflow-y-auto">
-                                    {/* Time Ruler */}
-                                    <div className="relative h-4 mb-2 border-b border-white/5">
-                                        <div 
-                                            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10" 
-                                            style={{ left: `${(currentTime / videoDuration) * 100}%` }}
-                                        ></div>
-                                    </div>
-
-                                    {/* Video Track */}
-                                    <div className="h-8 bg-zinc-950 rounded border border-white/5 relative overflow-hidden flex items-center px-2">
-                                        <FilmIcon className="w-4 h-4 text-zinc-600 mr-2" />
-                                        <div className="flex-1 h-6 bg-indigo-900/40 rounded border border-indigo-500/30 flex items-center px-2 text-[10px] text-indigo-300">
-                                            Main Video Clip
+                                {/* Timeline Tracks Area */}
+                                <div className="flex-1 flex overflow-hidden">
+                                    {/* Track Headers (Left) */}
+                                    <div className="w-48 flex-shrink-0 border-r border-white/5 bg-zinc-900/50 flex flex-col">
+                                        <div className="h-8 border-b border-white/5"></div> {/* Ruler Spacer */}
+                                        
+                                        {/* Video Header */}
+                                        <div className="h-12 border-b border-white/5 flex items-center px-4 gap-3">
+                                            <div className="w-6 h-6 rounded bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                                <FilmIcon className="w-3 h-3" />
+                                            </div>
+                                            <span className="text-xs font-medium text-zinc-300">Video 1</span>
+                                        </div>
+                                        
+                                        {/* Overlay Header */}
+                                        <div className="h-12 border-b border-white/5 flex items-center px-4 gap-3">
+                                            <div className="w-6 h-6 rounded bg-purple-500/20 flex items-center justify-center text-purple-400">
+                                                <PencilSquareIcon className="w-3 h-3" />
+                                            </div>
+                                            <span className="text-xs font-medium text-zinc-300">Overlay</span>
+                                        </div>
+                                        
+                                        {/* Audio Header */}
+                                        <div className="h-12 border-b border-white/5 flex items-center px-4 gap-3">
+                                            <div className="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                                <SpeakerWaveIcon className="w-3 h-3" />
+                                            </div>
+                                            <span className="text-xs font-medium text-zinc-300">Audio 1</span>
                                         </div>
                                     </div>
 
-                                    {/* Overlay Track */}
-                                    <div className="h-8 bg-zinc-950 rounded border border-white/5 relative overflow-hidden flex items-center px-2">
-                                        <PencilSquareIcon className="w-4 h-4 text-zinc-600 mr-2" />
-                                        <div className="flex-1 h-full relative">
-                                            {overlays.map(overlay => (
-                                                <div 
-                                                    key={overlay.id}
-                                                    className="absolute top-1 bottom-1 bg-purple-900/40 border border-purple-500/30 rounded text-[10px] text-purple-300 px-2 flex items-center truncate"
-                                                    style={{ left: '0%', width: '100%' }}
-                                                >
-                                                    Text: {overlay.text}
+                                    {/* Timeline Content (Right) */}
+                                    <div className="flex-1 overflow-x-auto custom-scrollbar bg-[#0c0c0e] relative">
+                                        {/* Time Ruler */}
+                                        <div className="h-8 border-b border-white/5 flex items-end sticky top-0 bg-[#0c0c0e] z-10">
+                                            {[...Array(20)].map((_, i) => (
+                                                <div key={i} className="flex-1 flex flex-col justify-end border-l border-white/5 h-full pl-1 relative group">
+                                                    <span className="text-[9px] text-zinc-600 font-mono mb-1 block group-hover:text-zinc-400">{i * 2}s</span>
+                                                    <div className="h-1.5 w-px bg-zinc-700"></div>
                                                 </div>
                                             ))}
                                         </div>
-                                    </div>
-                                    
-                                    {/* Audio Track (Mock) */}
-                                     <div className="h-8 bg-zinc-950 rounded border border-white/5 relative overflow-hidden flex items-center px-2">
-                                        <SpeakerWaveIcon className="w-4 h-4 text-zinc-600 mr-2" />
-                                        <div className="flex-1 h-6 bg-emerald-900/20 rounded border border-emerald-500/20 flex items-center px-2 text-[10px] text-emerald-500 opacity-50">
-                                            Background Audio (Generated)
+
+                                        {/* Playhead */}
+                                        <div 
+                                            className="absolute top-0 bottom-0 w-px bg-red-500 z-30 pointer-events-none transition-all duration-100 linear"
+                                            style={{ left: `${(currentTime / (videoDuration || 10)) * 100}%` }}
+                                        >
+                                            <div className="absolute -top-0 -left-1.5 w-3 h-3 bg-red-500 transform rotate-45 shadow-md"></div>
+                                            <div className="absolute top-0 bottom-0 w-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+                                        </div>
+
+                                        {/* Track Lanes */}
+                                        <div className="relative min-w-[800px]">
+                                            
+                                            {/* Video Lane */}
+                                            <div className="h-12 border-b border-white/5 p-1">
+                                                <div className="h-full bg-indigo-900/30 border border-indigo-500/30 rounded-md relative overflow-hidden group hover:bg-indigo-900/40 transition-colors cursor-pointer">
+                                                    <div className="absolute inset-0 flex items-center px-3 gap-2">
+                                                        <div className="w-8 h-6 bg-black/30 rounded text-xs flex items-center justify-center text-white/50 font-mono">img</div>
+                                                        <span className="text-[10px] font-medium text-indigo-200 truncate">Generated_Clip_001.mp4</span>
+                                                    </div>
+                                                    {/* Thumbnails simulation */}
+                                                    <div className="absolute inset-0 flex opacity-20 pointer-events-none">
+                                                        {[...Array(10)].map((_, i) => (
+                                                            <div key={i} className="flex-1 border-r border-black/20 bg-white/10"></div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Overlay Lane */}
+                                            <div className="h-12 border-b border-white/5 p-1 relative">
+                                                {overlays.map(overlay => (
+                                                    <div 
+                                                        key={overlay.id}
+                                                        className="absolute top-1 bottom-1 bg-purple-900/40 border border-purple-500/30 rounded-md flex items-center px-3 text-[10px] text-purple-200 cursor-pointer hover:bg-purple-900/60"
+                                                        style={{ left: '0%', width: '100%' }}
+                                                    >
+                                                        <span className="truncate">{overlay.text}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Audio Lane */}
+                                            <div className="h-12 border-b border-white/5 p-1">
+                                                <div className="h-full bg-emerald-900/20 border border-emerald-500/20 rounded-md relative flex items-center justify-center overflow-hidden">
+                                                    {/* Waveform */}
+                                                    <div className="flex gap-0.5 items-center w-full px-2 opacity-40">
+                                                        {[...Array(50)].map((_, i) => (
+                                                            <div 
+                                                                key={i} 
+                                                                className="flex-1 bg-emerald-500 rounded-full" 
+                                                                style={{ height: `${Math.random() * 80 + 20}%` }}
+                                                            ></div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

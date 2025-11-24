@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Modality, LiveServerMessage } from "@google/genai";
 import { BrandProfile, CampaignBlueprint, CompetitorAnalysisReport, EnhancedPrompt, SocialPost, CoachMessage } from '../types';
 
@@ -323,6 +324,49 @@ const aiService = {
       throw new Error("Generation Failed");
   },
   
+  generate3D: async (params: { prompt?: string, image?: File }): Promise<string> => {
+    const ai = createAI();
+    
+    // Image-to-3D
+    if (params.image) {
+        const base64Data = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+            reader.readAsDataURL(params.image!);
+        });
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: params.image.type, data: base64Data } },
+                    { text: "Transform this image into a high-quality 3D render. Make it look like a 3D model with isometric view, depth shading, and studio lighting on a clean background. Maintain the object's colors and identity." }
+                ]
+            },
+            config: {
+                responseModalities: [Modality.IMAGE]
+            }
+        });
+
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) {
+                return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            }
+        }
+        throw new Error("Image-to-3D conversion failed");
+    } 
+    
+    // Text-to-3D
+    else if (params.prompt) {
+        const fullPrompt = `Professional 3D render of ${params.prompt}. Isometric view, octane render, high poly, studio lighting, ambient occlusion, white background, 4k quality.`;
+        // Use external model for text-to-3D quality
+        const results = await aiService.generateImage(fullPrompt, "1:1", "bytedance/seedream-v4-text-to-image");
+        return results[0];
+    }
+    
+    throw new Error("Invalid parameters");
+  },
+
   editImage: async (imageFile: File, instruction: string): Promise<string> => {
     const ai = createAI();
     const base64Data = await new Promise<string>((resolve) => {
@@ -505,23 +549,39 @@ const aiService = {
 
   enhancePrompt: async (idea: string): Promise<EnhancedPrompt> => {
     const ai = createAI();
+    
+    const systemInstruction = `Act as an expert Prompt Engineer for high-end generative AI (Midjourney v6, DALL-E 3, Stable Diffusion XL).
+    Your goal is to take a user's concept and transform it into a production-ready, engineering-grade prompt that yields photorealistic or highly artistic results.
+    
+    INSTRUCTIONS:
+    1. Analyze the INPUT CONCEPT. Keep the core subject exactly as requested but describe it with sensory details.
+    2. Add professional lighting (e.g., volumetric, cinematic, studio, golden hour).
+    3. Define the camera/composition (e.g., 85mm, wide angle, rule of thirds, depth of field).
+    4. Specify the art style/medium (e.g., 3D render, oil painting, cyberpunk, polaroid).
+    5. Construct a 'Negative Prompt' to avoid common errors (blur, distortion, bad anatomy).
+    6. COMPOSE THE FINAL PROMPT: Combine all elements into a cohesive, comma-separated string used by pros.
+    
+    You must fill the schema fields meticulously.`;
+
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Enhance this simple idea into a detailed image generation prompt: "${idea}"`,
+        contents: `INPUT CONCEPT: "${idea}"`,
         config: {
+            systemInstruction: systemInstruction,
             responseMimeType: "application/json",
             responseSchema: {
                 type: Type.OBJECT,
                 properties: {
-                    subject: { type: Type.STRING },
-                    style: { type: Type.STRING },
-                    composition: { type: Type.STRING },
-                    lighting: { type: Type.STRING },
-                    colorPalette: { type: Type.STRING },
-                    mood: { type: Type.STRING },
-                    negativePrompt: { type: Type.STRING },
-                    finalPrompt: { type: Type.STRING }
-                }
+                    subject: { type: Type.STRING, description: "Detailed description of the main subject." },
+                    style: { type: Type.STRING, description: "The specific art style or medium (e.g., Hyperrealistic 3D Render)." },
+                    composition: { type: Type.STRING, description: "Camera angles, framing, and perspective." },
+                    lighting: { type: Type.STRING, description: "Lighting conditions and atmosphere." },
+                    colorPalette: { type: Type.STRING, description: "Dominant colors and grading." },
+                    mood: { type: Type.STRING, description: "The emotional vibe of the image." },
+                    negativePrompt: { type: Type.STRING, description: "What to exclude (e.g., ugly, blurry)." },
+                    finalPrompt: { type: Type.STRING, description: "The fully optimized, long-form prompt string ready for generation." }
+                },
+                required: ["subject", "style", "composition", "lighting", "colorPalette", "mood", "negativePrompt", "finalPrompt"]
             }
         }
     });

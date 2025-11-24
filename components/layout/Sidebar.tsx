@@ -1,11 +1,13 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppContext } from '../../contexts/AppContext';
 import { SIDEBAR_CATEGORIES } from '../../constants';
 import Logo from '../ui/Logo';
+import { ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
 
 const Sidebar: React.FC = () => {
-    const { isSidebarOpen } = useAppContext();
+    const { isSidebarOpen, toggleSidebar } = useAppContext();
     
     const linkClasses = "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group border border-transparent";
     // Active state mimics a pressed button or highlighted item in Linear/MacOS
@@ -13,10 +15,22 @@ const Sidebar: React.FC = () => {
     const inactiveLinkClasses = "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50";
 
     return (
-        <aside className={`fixed inset-y-0 left-0 w-64 bg-[#050505] border-r border-white/5 z-40 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="flex flex-col h-full">
-                <div className="h-16 flex items-center px-6 flex-shrink-0 border-b border-white/5">
+        <aside className={`
+            fixed inset-y-0 left-0 z-40 bg-[#050505] border-r border-white/5 transition-all duration-300 ease-in-out flex flex-col overflow-hidden
+            lg:relative
+            ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64 lg:w-0 lg:border-none lg:translate-x-0'}
+        `}>
+            {/* Fixed width inner container to prevent content squashing during width transition */}
+            <div className="w-64 flex flex-col h-full whitespace-nowrap overflow-hidden">
+                <div className="h-16 flex items-center justify-between px-6 flex-shrink-0 border-b border-white/5">
                     <Logo href="/dashboard" textClassName="text-base text-white tracking-tight font-display font-bold" />
+                    <button 
+                        onClick={toggleSidebar} 
+                        className="text-zinc-600 hover:text-zinc-300 transition-colors p-1 rounded hover:bg-white/5"
+                        title="Hide Menu"
+                    >
+                        <ChevronDoubleLeftIcon className="w-5 h-5" />
+                    </button>
                 </div>
 
                 <nav className="flex-1 px-3 py-6 space-y-8 overflow-y-auto scrollbar-none">

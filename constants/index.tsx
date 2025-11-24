@@ -13,7 +13,8 @@ import {
     MagnifyingGlassIcon,
     BoltIcon,
     ChartBarIcon,
-    RectangleGroupIcon
+    RectangleGroupIcon,
+    CubeTransparentIcon
 } from '@heroicons/react/24/outline';
 
 export const SIDEBAR_CATEGORIES = [

@@ -17,8 +17,8 @@ const ImageGenerator: React.FC = () => {
         if (!prompt) return;
         setIsLoading(true);
         setImageUrl(null);
-        const url = await aiService.generateImage(prompt, aspectRatio);
-        setImageUrl(url);
+        const urls = await aiService.generateImage(prompt, aspectRatio);
+        setImageUrl(urls[0] || null);
         setIsLoading(false);
     };
 

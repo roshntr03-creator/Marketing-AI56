@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { TOOLS, ToolId } from '../constants';
@@ -14,7 +13,6 @@ const toolComponents: Record<ToolId, React.LazyExoticComponent<React.FC<{}>>> = 
     'campaigns': React.lazy(() => import('./tools/Campaigns')),
     'competitor-analysis': React.lazy(() => import('./tools/CompetitorAnalysis')),
     'prompt-enhancer': React.lazy(() => import('./tools/PromptEnhancer')),
-    // Fix: Add workflow-builder component
     'workflow-builder': React.lazy(() => import('./WorkflowBuilderPage')),
 };
 

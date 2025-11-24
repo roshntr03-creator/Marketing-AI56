@@ -21,6 +21,13 @@ import {
     AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 
+// --- Constants ---
+const BRANDS = [
+    'Acme Corp', 'Global Dynamics', 'Stark Ind', 'Umbrella Corp', 
+    'Cyberdyne', 'Weyland-Yutani', 'Massive Dynamic', 'InGen', 
+    'Tyrell Corp', 'Oscorp', 'Aperture Science', 'Black Mesa'
+];
+
 // --- New Component: Creative Engine Visualization ---
 // A centralized, meaningful animation showing the "Brain" orchestrating tasks.
 const CreativeEngine = () => {
@@ -414,13 +421,30 @@ const LandingPage: React.FC = () => {
                 {/* TRIPLE SHOWCASE GRID */}
                 <ShowcaseSection />
                 
-                {/* Trusted By / Social Proof */}
-                <div className="mt-32 max-w-5xl mx-auto border-t border-white/5 pt-12 px-6">
-                     <p className="text-sm font-medium text-zinc-500 uppercase tracking-widest mb-8">Trusted by innovative teams at</p>
-                     <div className="flex flex-wrap justify-center gap-12 opacity-40 grayscale hover:grayscale-0 transition-all duration-500">
-                         {['Acme Corp', 'Global Dynamics', 'Stark Ind', 'Umbrella', 'Cyberdyne'].map((brand) => (
-                             <span key={brand} className="text-xl font-bold font-display text-white">{brand}</span>
-                         ))}
+                {/* Trusted By / Social Proof (MARQUEE) */}
+                <div className="mt-32 border-t border-white/5 pt-12 w-full overflow-hidden">
+                     <p className="text-sm font-medium text-zinc-500 uppercase tracking-widest mb-12 text-center">Trusted by innovative teams at</p>
+                     
+                     <div className="relative flex w-full overflow-hidden">
+                         {/* Scroller Track */}
+                         <div className="flex animate-scroll whitespace-nowrap hover:[animation-play-state:paused]">
+                             {/* Set 1 */}
+                             {BRANDS.map((brand) => (
+                                 <div key={brand} className="mx-8 md:mx-16 flex items-center gap-4 group cursor-default select-none">
+                                     <span className="text-xl md:text-2xl font-bold font-display text-zinc-700 group-hover:text-zinc-200 transition-colors duration-300">{brand}</span>
+                                 </div>
+                             ))}
+                             {/* Set 2 (Duplicate) */}
+                             {BRANDS.map((brand) => (
+                                 <div key={`${brand}-dup`} className="mx-8 md:mx-16 flex items-center gap-4 group cursor-default select-none">
+                                     <span className="text-xl md:text-2xl font-bold font-display text-zinc-700 group-hover:text-zinc-200 transition-colors duration-300">{brand}</span>
+                                 </div>
+                             ))}
+                         </div>
+                         
+                         {/* Gradient Masks */}
+                         <div className="absolute top-0 left-0 h-full w-24 md:w-48 bg-gradient-to-r from-[#050505] to-transparent z-10 pointer-events-none"></div>
+                         <div className="absolute top-0 right-0 h-full w-24 md:w-48 bg-gradient-to-l from-[#050505] to-transparent z-10 pointer-events-none"></div>
                      </div>
                 </div>
             </main>
@@ -653,7 +677,7 @@ const LandingPage: React.FC = () => {
                         <span className="hover:text-zinc-400 cursor-pointer transition-colors">GitHub</span>
                     </div>
                     <div className="text-xs text-zinc-700">
-                        © 2024 All rights reserved.
+                        © 2025 All rights reserved.
                     </div>
                 </div>
             </footer>

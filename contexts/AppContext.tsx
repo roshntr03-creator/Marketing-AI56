@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { BrandProfile, CreationJob, UserProfile, ChecklistState } from '../types';
 import { Language, TranslationKey, getTranslation } from '../utils/i18n';
@@ -32,7 +33,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [language, setLanguageState] = useState<Language>(storage.getLanguage());
   const [creations, setCreations] = useState<CreationJob[]>(storage.getCreations());
   const [checklistState, setChecklistState] = useState<ChecklistState>(storage.getChecklistState());
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  // Default to open on large screens (>= 1024px), closed on small screens
+  const [isSidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
