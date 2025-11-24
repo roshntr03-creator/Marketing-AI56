@@ -18,7 +18,9 @@ import {
     DocumentTextIcon,
     GlobeAltIcon,
     LockClosedIcon,
-    AdjustmentsHorizontalIcon
+    AdjustmentsHorizontalIcon,
+    FingerPrintIcon,
+    SignalIcon
 } from '@heroicons/react/24/outline';
 
 // --- Constants ---
@@ -449,7 +451,7 @@ const LandingPage: React.FC = () => {
                 </div>
             </main>
 
-            {/* Features - Bento Grid - UPDATED DESIGN */}
+            {/* Features - Bento Grid - REDESIGNED */}
             <section id="features" className="py-32 px-6 relative z-10 border-t border-white/5 bg-[#050505]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.05),transparent_40%)] pointer-events-none"></div>
                 
@@ -465,15 +467,17 @@ const LandingPage: React.FC = () => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 h-auto md:h-[900px]">
+                    <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[800px]">
                         
-                        {/* Large Feature - Video Engine - Redesigned as "Editor Interface" */}
-                        <div className="md:col-span-2 md:row-span-2 rounded-[2.5rem] bg-[#08080a] border border-white/10 overflow-hidden relative group hover:border-indigo-500/30 transition-all duration-500 shadow-2xl hover:shadow-[0_0_60px_rgba(79,70,229,0.15)]">
+                        {/* 1. Generative Video Engine (Large Card) */}
+                        <div className="md:col-span-2 md:row-span-2 rounded-[2rem] bg-[#08080a] border border-white/10 overflow-hidden relative group hover:border-indigo-500/30 transition-all duration-500 shadow-2xl hover:shadow-[0_0_60px_rgba(79,70,229,0.15)] flex flex-col">
+                            {/* Background Noise */}
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
                             
+                            {/* Content */}
                             <div className="relative z-10 p-10 flex flex-col h-full">
                                 <div className="flex justify-between items-start mb-12">
-                                    <div className="p-3 rounded-2xl bg-zinc-900/80 border border-white/10 text-white shadow-lg backdrop-blur-md">
+                                    <div className="p-3 rounded-2xl bg-zinc-900/80 border border-white/10 text-white shadow-lg backdrop-blur-md group-hover:scale-110 transition-transform duration-500">
                                         <CubeIcon className="w-8 h-8 text-indigo-400" />
                                     </div>
                                     <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider">
@@ -481,124 +485,131 @@ const LandingPage: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="mb-16 relative z-20">
-                                    <h3 className="text-4xl font-display font-bold text-white mb-4 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">Generative Video Engine</h3>
-                                    <p className="text-zinc-400 max-w-md leading-relaxed text-lg">
+                                <div className="mb-12 relative z-20">
+                                    <h3 className="text-3xl font-display font-bold text-white mb-4 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">Generative Video Engine</h3>
+                                    <p className="text-zinc-400 max-w-md leading-relaxed">
                                         Create broadcast-ready commercials using our proprietary <strong>timeline editor</strong>. 
                                         Multi-track sequencing, real-time rendering, and precise camera controls.
                                     </p>
                                 </div>
                                 
-                                {/* VISUALIZATION: Abstract Editor Interface */}
-                                <div className="flex-1 bg-[#0c0c0e] rounded-t-2xl border-t border-l border-r border-white/10 relative overflow-hidden shadow-2xl mt-auto translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                     {/* Editor Header */}
-                                     <div className="h-10 border-b border-white/5 bg-black/40 flex items-center px-4 justify-between">
-                                         <div className="flex gap-2">
-                                             <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                             <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                {/* UI SIMULATION: Video Editor */}
+                                <div className="flex-1 bg-[#0a0a0c] rounded-t-2xl border-t border-l border-r border-white/10 relative overflow-hidden shadow-2xl mt-auto translate-y-6 group-hover:translate-y-0 transition-transform duration-500 ease-out">
+                                     {/* Header Bar */}
+                                     <div className="h-8 border-b border-white/5 bg-black/40 flex items-center px-3 justify-between">
+                                         <div className="flex gap-1.5">
+                                             <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
+                                             <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
                                          </div>
-                                         <div className="flex items-center gap-2">
-                                             <div className="h-1.5 w-1.5 bg-red-500 rounded-full animate-pulse"></div>
-                                             <span className="text-[9px] font-mono text-zinc-500">REC 00:04:12:00</span>
+                                         <div className="text-[9px] font-mono text-indigo-400 flex items-center gap-2">
+                                             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                                             REC 00:04:12:00
                                          </div>
                                      </div>
                                      
-                                     {/* Viewport Area */}
-                                     <div className="h-[55%] bg-gradient-to-b from-zinc-900 to-black relative overflow-hidden">
-                                         <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-                                         {/* Animated waveform visual */}
-                                         <div className="absolute bottom-0 left-0 right-0 h-32 flex items-end gap-1 px-4 opacity-20">
-                                             {[...Array(20)].map((_, i) => (
-                                                 <div key={i} className="flex-1 bg-indigo-500 animate-pulse" style={{ height: `${Math.random() * 100}%`, animationDelay: `${i * 0.1}s` }}></div>
-                                             ))}
+                                     {/* Main Viewport with Waveform */}
+                                     <div className="h-[60%] bg-gradient-to-b from-zinc-900 to-black relative overflow-hidden group-hover:bg-zinc-900/80 transition-colors">
+                                         <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                                             {/* Animated Waveform */}
+                                             <div className="flex items-end gap-1 h-16">
+                                                 {[...Array(20)].map((_, i) => (
+                                                     <div key={i} className="w-1.5 bg-indigo-500 animate-[pulse_1.5s_ease-in-out_infinite]" style={{ height: `${Math.random() * 100}%`, animationDelay: `${i * 0.05}s` }}></div>
+                                                 ))}
+                                             </div>
                                          </div>
-                                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-zinc-700">
-                                             <PlayIcon className="w-16 h-16 opacity-50" />
+                                         <div className="absolute bottom-4 left-4 px-2 py-1 bg-black/60 rounded text-[8px] text-zinc-400 font-mono border border-white/5">
+                                             1080p • 60FPS
                                          </div>
                                      </div>
 
                                      {/* Timeline Tracks */}
-                                     <div className="absolute bottom-0 left-0 right-0 h-[35%] bg-[#0a0a0c] border-t border-white/5 p-3 space-y-2">
+                                     <div className="absolute bottom-0 left-0 right-0 h-[35%] bg-[#0e0e10] border-t border-white/5 p-3 space-y-2">
                                          {/* Playhead */}
-                                         <div className="absolute top-0 bottom-0 left-1/3 w-0.5 bg-red-500 z-30 shadow-[0_0_10px_red]">
-                                             <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-red-500 transform rotate-45"></div>
-                                         </div>
+                                         <div className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 shadow-[0_0_8px_red] left-[30%] animate-[slideRight_4s_linear_infinite]"></div>
+                                         <style>{`
+                                            @keyframes slideRight {
+                                                0% { left: 10%; }
+                                                100% { left: 90%; }
+                                            }
+                                         `}</style>
                                          
                                          {/* Track 1 */}
-                                         <div className="h-6 rounded bg-zinc-900/50 border border-white/5 relative overflow-hidden">
-                                             <div className="absolute top-1 bottom-1 left-0 w-[60%] bg-indigo-900/40 border border-indigo-500/30 rounded mx-1"></div>
+                                         <div className="h-5 rounded bg-zinc-900 border border-white/5 relative overflow-hidden flex items-center px-1">
+                                             <div className="h-3 w-[40%] bg-indigo-900/60 border border-indigo-500/30 rounded-sm relative overflow-hidden">
+                                                 <div className="absolute inset-0 bg-indigo-500/10"></div>
+                                             </div>
+                                             <div className="h-3 w-[30%] ml-1 bg-purple-900/60 border border-purple-500/30 rounded-sm"></div>
                                          </div>
                                          {/* Track 2 */}
-                                         <div className="h-6 rounded bg-zinc-900/50 border border-white/5 relative overflow-hidden">
-                                              <div className="absolute top-1 bottom-1 left-[20%] w-[40%] bg-purple-900/40 border border-purple-500/30 rounded mx-1"></div>
+                                         <div className="h-5 rounded bg-zinc-900 border border-white/5 relative overflow-hidden flex items-center px-1">
+                                              <div className="h-3 w-[60%] ml-[20%] bg-emerald-900/60 border border-emerald-500/30 rounded-sm"></div>
                                          </div>
                                      </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Feature 2 - Brand Consistency - Redesigned as "Style Lock" */}
-                        <div className="md:col-span-1 md:row-span-1 rounded-[2.5rem] bg-[#08080a] border border-white/10 p-8 relative overflow-hidden group hover:border-purple-500/30 transition-all shadow-xl hover:shadow-[0_0_40px_rgba(168,85,247,0.1)]">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-purple-600/20 transition-colors"></div>
+                        {/* 2. Brand Style Lock (Small Card) */}
+                        <div className="md:col-span-1 md:row-span-1 rounded-[2rem] bg-[#08080a] border border-white/10 p-8 relative overflow-hidden group hover:border-purple-500/30 transition-all shadow-xl hover:shadow-[0_0_40px_rgba(168,85,247,0.1)] flex flex-col justify-between">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-purple-600/5 blur-[60px] rounded-full pointer-events-none group-hover:bg-purple-600/10 transition-colors"></div>
                             
-                            <div className="relative z-10 h-full flex flex-col">
-                                <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 border border-white/10 flex items-center justify-center text-white mb-6 shadow-lg">
+                            <div>
+                                <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 border border-white/10 flex items-center justify-center text-white mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
                                     <SwatchIcon className="w-6 h-6 text-purple-400" />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3 font-display">Brand Style Lock</h3>
-                                <p className="text-sm text-zinc-400 leading-relaxed mb-8">
-                                    Define your visual identity once. Our AI strictly adheres to your palette and typography.
+                                <h3 className="text-xl font-bold text-white mb-2 font-display">Brand Style Lock</h3>
+                                <p className="text-sm text-zinc-400 leading-relaxed">
+                                    Define identity once. AI adheres strictly to your palette.
                                 </p>
-                                
-                                {/* VISUALIZATION: Color Palette Lock */}
-                                <div className="mt-auto bg-zinc-900/50 rounded-xl border border-white/5 p-3 flex items-center justify-between relative overflow-hidden">
-                                     <div className="flex gap-[-8px]">
-                                         <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-[#08080a] shadow-lg z-30"></div>
-                                         <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-[#08080a] shadow-lg -ml-3 z-20"></div>
-                                         <div className="w-8 h-8 rounded-full bg-pink-500 border-2 border-[#08080a] shadow-lg -ml-3 z-10"></div>
-                                     </div>
-                                     <div className="flex items-center gap-2 text-xs font-bold text-white bg-black/30 px-3 py-1.5 rounded-lg border border-white/5">
-                                         <LockClosedIcon className="w-3 h-3 text-emerald-400" />
-                                         LOCKED
-                                     </div>
-                                     {/* Scan line */}
-                                     <div className="absolute top-0 bottom-0 w-1 bg-white/20 blur-sm animate-[scan_2s_ease-in-out_infinite]"></div>
-                                </div>
+                            </div>
+                            
+                            {/* UI SIMULATION: Locked Palette */}
+                            <div className="mt-6 bg-zinc-900/60 rounded-xl border border-white/5 p-4 flex items-center justify-between relative overflow-hidden">
+                                 <div className="flex -space-x-3">
+                                     <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-[#08080a] shadow-lg z-30 group-hover:translate-x-1 transition-transform"></div>
+                                     <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-[#08080a] shadow-lg z-20 group-hover:translate-x-1 transition-transform delay-75"></div>
+                                     <div className="w-8 h-8 rounded-full bg-pink-500 border-2 border-[#08080a] shadow-lg z-10 group-hover:translate-x-1 transition-transform delay-150"></div>
+                                 </div>
+                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-white bg-black/40 px-2.5 py-1.5 rounded-lg border border-white/5 group-hover:border-emerald-500/30 group-hover:text-emerald-400 transition-colors">
+                                     <LockClosedIcon className="w-3 h-3" />
+                                     LOCKED
+                                 </div>
                             </div>
                         </div>
 
-                        {/* Feature 3 - Strategy - Redesigned as "Data Radar" */}
-                        <div className="md:col-span-1 md:row-span-1 rounded-[2.5rem] bg-[#08080a] border border-white/10 p-8 relative overflow-hidden group hover:border-emerald-500/30 transition-all shadow-xl hover:shadow-[0_0_40px_rgba(16,185,129,0.1)]">
-                             <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-emerald-600/20 transition-colors"></div>
+                        {/* 3. Market Intelligence (Small Card) */}
+                        <div className="md:col-span-1 md:row-span-1 rounded-[2rem] bg-[#08080a] border border-white/10 p-8 relative overflow-hidden group hover:border-emerald-500/30 transition-all shadow-xl hover:shadow-[0_0_40px_rgba(16,185,129,0.1)] flex flex-col justify-between">
+                             <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-600/5 blur-[60px] rounded-full pointer-events-none group-hover:bg-emerald-600/10 transition-colors"></div>
                             
-                            <div className="relative z-10 h-full flex flex-col">
-                                <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 border border-white/10 flex items-center justify-center text-white mb-6 shadow-lg">
-                                    <ChartBarIcon className="w-6 h-6 text-emerald-400" />
+                            <div>
+                                <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 border border-white/10 flex items-center justify-center text-white mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <SignalIcon className="w-6 h-6 text-emerald-400" />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3 font-display">Market Intelligence</h3>
-                                <p className="text-sm text-zinc-400 leading-relaxed mb-6">
-                                    Real-time competitive analysis. We scan the market to build data-driven blueprints.
+                                <h3 className="text-xl font-bold text-white mb-2 font-display">Market Intelligence</h3>
+                                <p className="text-sm text-zinc-400 leading-relaxed">
+                                    Real-time competitive analysis and strategic radar.
                                 </p>
-                                
-                                {/* VISUALIZATION: Radar Scan */}
-                                <div className="mt-auto relative h-24 w-full bg-black/40 rounded-xl border border-white/5 overflow-hidden flex items-center justify-center">
-                                     {/* Grid */}
-                                     <div className="absolute inset-0 bg-[linear-gradient(transparent_1px,#000_1px),linear-gradient(90deg,transparent_1px,#000_1px)] bg-[size:16px_16px] opacity-20 [mask-image:radial-gradient(ellipse_at_center,black,transparent)]"></div>
-                                     
-                                     {/* Radar Circles */}
-                                     <div className="absolute w-32 h-32 border border-emerald-500/20 rounded-full"></div>
-                                     <div className="absolute w-16 h-16 border border-emerald-500/30 rounded-full"></div>
-                                     
-                                     {/* Scanning Beam */}
-                                     <div className="absolute w-32 h-32 bg-gradient-to-r from-transparent to-emerald-500/20 rounded-full [clip-path:polygon(50%_50%,100%_0,100%_100%)] animate-[spin_3s_linear_infinite] origin-center"></div>
-                                     
-                                     {/* Dots */}
-                                     <div className="absolute top-6 left-10 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-                                     <div className="absolute bottom-8 right-12 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse delay-75"></div>
-                                     
-                                     <div className="absolute bottom-2 right-2 text-[9px] font-mono text-emerald-500/80">LIVE FEED</div>
-                                </div>
+                            </div>
+                            
+                            {/* UI SIMULATION: Radar Scan */}
+                            <div className="mt-6 relative h-28 w-full bg-black/40 rounded-xl border border-white/5 overflow-hidden flex items-center justify-center">
+                                 {/* Grid */}
+                                 <div className="absolute inset-0 bg-[linear-gradient(transparent_1px,#000_1px),linear-gradient(90deg,transparent_1px,#000_1px)] bg-[size:16px_16px] opacity-10"></div>
+                                 
+                                 {/* Radar Rings */}
+                                 <div className="absolute w-24 h-24 border border-emerald-500/10 rounded-full"></div>
+                                 <div className="absolute w-12 h-12 border border-emerald-500/20 rounded-full"></div>
+                                 
+                                 {/* Scanning Beam */}
+                                 <div className="absolute w-32 h-32 bg-gradient-to-r from-transparent to-emerald-500/10 rounded-full [clip-path:polygon(50%_50%,100%_0,100%_100%)] animate-[spin_3s_linear_infinite] origin-center"></div>
+                                 
+                                 {/* Blips */}
+                                 <div className="absolute top-8 left-12 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_5px_rgba(52,211,153,0.8)]"></div>
+                                 <div className="absolute bottom-6 right-16 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse delay-300 shadow-[0_0_5px_rgba(52,211,153,0.8)]"></div>
+                                 
+                                 <div className="absolute bottom-2 right-3 text-[8px] font-mono text-emerald-500/60 flex items-center gap-1">
+                                     <span className="w-1 h-1 bg-emerald-500 rounded-full animate-ping"></span> LIVE
+                                 </div>
                             </div>
                         </div>
                     </div>

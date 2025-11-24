@@ -14,6 +14,7 @@ interface AppContextType {
   checklistState: ChecklistState;
   login: (email: string, name?: string) => void;
   logout: () => void;
+  acceptTerms: () => void;
   setBrandProfile: (profile: BrandProfile) => void;
   setLanguage: (lang: Language) => void;
   addCreation: (job: Omit<CreationJob, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
@@ -43,20 +44,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     storage.saveAuthToken(token);
     
     let displayName = name;
-    if (!displayName) {
+    if (!displayName && !userProfile) {
         const namePart = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
         displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    } else if (!displayName && userProfile) {
+        displayName = userProfile.name;
     }
+
+    // If name provided, it's likely a signup -> require terms
+    // If no name provided (login), assume returning user -> terms accepted (simplified logic)
+    // In a real app, the backend tells us if terms are accepted.
+    const isSignup = !!name;
 
     const profile: UserProfile = {
         name: displayName || 'Creator',
         email,
-        plan: 'Pro', 
+        plan: 'Pro',
+        termsAccepted: isSignup ? false : true
     };
     storage.saveUserProfile(profile);
 
     setIsAuthenticated(true);
     setUserProfileState(profile);
+  };
+
+  const acceptTerms = () => {
+      if (userProfile) {
+          const updatedProfile = { ...userProfile, termsAccepted: true };
+          setUserProfileState(updatedProfile);
+          storage.saveUserProfile(updatedProfile);
+      }
   };
 
   const logout = () => {
@@ -203,7 +220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider value={{ 
         isAuthenticated, userProfile, brandProfile, language, creations, checklistState,
         login, logout, setBrandProfile, setLanguage, addCreation, updateChecklist, t,
-        isSidebarOpen, toggleSidebar, setSidebarOpen
+        acceptTerms, isSidebarOpen, toggleSidebar, setSidebarOpen
     }}>
       {children}
     </AppContext.Provider>

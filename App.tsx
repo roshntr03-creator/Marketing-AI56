@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './contexts/AppContext';
@@ -19,18 +20,32 @@ import PostAssistantPage from './pages/PostAssistantPage';
 import PromptEnhancerPage from './pages/PromptEnhancerPage';
 import CompetitorAnalysisPage from './pages/CompetitorAnalysisPage';
 import WorkflowBuilderPage from './pages/WorkflowBuilderPage';
+import TermsAgreementPage from './pages/TermsAgreementPage';
 
 const AppRoutes: React.FC = () => {
-    const { isAuthenticated, language } = useAppContext();
+    const { isAuthenticated, language, userProfile } = useAppContext();
     React.useEffect(() => {
         document.documentElement.lang = language;
         document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     }, [language]);
 
-    return (
-        <Routes>
-            {isAuthenticated ? (
-                // Authenticated Routes inside Layout
+    // 1. Check Authentication First
+    if (isAuthenticated) {
+        // 2. Check if Terms are Accepted
+        // If NOT accepted, force redirect to Terms Page for any route
+        if (userProfile && !userProfile.termsAccepted) {
+            return (
+                <Routes>
+                    <Route path="/terms-agreement" element={<TermsAgreementPage />} />
+                    {/* Catch-all redirect to terms */}
+                    <Route path="*" element={<Navigate to="/terms-agreement" replace />} />
+                </Routes>
+            );
+        }
+
+        // 3. If Authenticated AND Terms Accepted, show main app
+        return (
+            <Routes>
                 <Route element={<Layout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/brand" element={<BrandPage />} />
@@ -53,17 +68,22 @@ const AppRoutes: React.FC = () => {
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/signin" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/signup" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/terms-agreement" element={<Navigate to="/dashboard" replace />} />
                 </Route>
-            ) : (
-                // Public Routes
-                <>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/signin" element={<SignInPage />} />
-                    <Route path="/signup" element={<SignUpPage />} />
-                    {/* If not authenticated, redirect any other path to landing */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </>
-            )}
+                {/* Catch unknown authenticated routes */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+        );
+    }
+
+    // 4. Public Routes (Not Authenticated)
+    return (
+        <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            {/* If not authenticated, redirect any other path to landing */}
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
 };

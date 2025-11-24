@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
 import { Input } from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -14,7 +15,6 @@ const SignUpPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAppContext();
-  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +22,7 @@ const SignUpPage: React.FC = () => {
       setIsLoading(true);
        setTimeout(() => {
           login(email, name);
-          navigate('/dashboard');
+          // Navigation is handled by App.tsx based on termsAccepted state
        }, 1500);
     }
   };
@@ -31,7 +31,7 @@ const SignUpPage: React.FC = () => {
       setIsLoading(true);
       setTimeout(() => {
           login('user@gmail.com', 'Google User');
-          navigate('/dashboard');
+          // Navigation is handled by App.tsx based on termsAccepted state
       }, 1500);
   };
 

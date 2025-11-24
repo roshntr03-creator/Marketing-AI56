@@ -68,6 +68,7 @@ export interface UserProfile {
   name: string;
   email: string;
   plan: 'Starter' | 'Pro' | 'Enterprise';
+  termsAccepted?: boolean;
 }
 
 export interface ChecklistState {
