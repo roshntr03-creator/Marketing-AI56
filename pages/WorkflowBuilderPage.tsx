@@ -13,7 +13,8 @@ import {
     MagnifyingGlassPlusIcon,
     ExclamationTriangleIcon,
     CheckCircleIcon,
-    StopIcon
+    StopIcon,
+    TrashIcon
 } from '@heroicons/react/24/outline';
 import aiService from '../services/aiService';
 import { Input, Textarea } from '../components/ui/Input';
@@ -79,7 +80,7 @@ const NODE_DEFINITIONS: Record<NodeType, { label: string, icon: any, color: stri
     INPUT_TEXT: {
         label: 'Text Input',
         icon: DocumentTextIcon,
-        color: 'border-amber-500/30 bg-amber-500/5 text-amber-500',
+        color: 'border-amber-500/30 bg-amber-500/10 text-amber-500',
         inputs: [],
         outputs: [{ id: 'out', label: 'Text', type: 'text' }],
         defaultConfig: { value: 'A futuristic cityscape' }
@@ -87,7 +88,7 @@ const NODE_DEFINITIONS: Record<NodeType, { label: string, icon: any, color: stri
     INPUT_IMAGE: {
         label: 'Image Input',
         icon: PhotoIcon,
-        color: 'border-pink-500/30 bg-pink-500/5 text-pink-500',
+        color: 'border-pink-500/30 bg-pink-500/10 text-pink-500',
         inputs: [],
         outputs: [{ id: 'out', label: 'Image', type: 'image' }],
         defaultConfig: { url: '' }
@@ -95,7 +96,7 @@ const NODE_DEFINITIONS: Record<NodeType, { label: string, icon: any, color: stri
     LLM: {
         label: 'AI Processor',
         icon: CpuChipIcon,
-        color: 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400',
+        color: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400',
         inputs: [{ id: 'in', label: 'Context', type: 'text' }],
         outputs: [{ id: 'out', label: 'Response', type: 'text' }],
         defaultConfig: { model: 'gemini-2.5-flash', prompt: 'Enhance this prompt: {{input}}' }
@@ -103,7 +104,7 @@ const NODE_DEFINITIONS: Record<NodeType, { label: string, icon: any, color: stri
     IMAGE_GEN: {
         label: 'Image Gen',
         icon: CubeIcon,
-        color: 'border-purple-500/30 bg-purple-500/5 text-purple-400',
+        color: 'border-purple-500/30 bg-purple-500/10 text-purple-400',
         inputs: [{ id: 'in', label: 'Prompt', type: 'text' }],
         outputs: [{ id: 'out', label: 'Image', type: 'image' }],
         defaultConfig: { model: 'nano-banana-pro', aspectRatio: '16:9', prompt: '' }
@@ -111,7 +112,7 @@ const NODE_DEFINITIONS: Record<NodeType, { label: string, icon: any, color: stri
     VIEWER: {
         label: 'Viewer',
         icon: EyeIcon,
-        color: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400',
+        color: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
         inputs: [{ id: 'in', label: 'Data', type: 'any' }],
         outputs: [],
         defaultConfig: {}
@@ -127,6 +128,7 @@ const getHandleCoords = (nodeId: string, handleId: string, type: 'input' | 'outp
     const list = type === 'input' ? node.inputs : node.outputs;
     const index = list.findIndex(h => h.id === handleId);
     
+    // Calculate Y position based on header height and item height
     const yOffset = HEADER_HEIGHT + 12 + (index * 28) + 10; 
     
     return {
@@ -159,9 +161,16 @@ const NodeWidget = React.memo(({
         e.stopPropagation();
     };
 
+    // Status visual indicators
+    const statusGlow = 
+        node.status === 'RUNNING' ? 'shadow-[0_0_30px_rgba(99,102,241,0.3)] border-indigo-500' :
+        node.status === 'SUCCESS' ? 'shadow-[0_0_30px_rgba(16,185,129,0.2)] border-emerald-500/50' :
+        node.status === 'ERROR' ? 'shadow-[0_0_30px_rgba(239,68,68,0.2)] border-red-500/50' :
+        '';
+
     return (
         <div 
-            className={`absolute flex flex-col rounded-lg bg-[#121214] border shadow-xl transition-all duration-200 group ${selected ? 'border-indigo-500 ring-1 ring-indigo-500 shadow-indigo-500/20 z-50' : 'border-white/10 z-10 hover:border-white/20'}`}
+            className={`absolute flex flex-col rounded-xl bg-[#121214]/90 backdrop-blur-md border shadow-xl transition-all duration-200 group ${selected ? 'border-indigo-500 ring-1 ring-indigo-500 shadow-indigo-500/20 z-50' : 'border-white/10 z-10 hover:border-white/20'} ${statusGlow}`}
             style={{ 
                 width: NODE_WIDTH, 
                 transform: `translate(${node.x}px, ${node.y}px)`,
@@ -169,9 +178,9 @@ const NodeWidget = React.memo(({
             onMouseDown={(e) => onMouseDown(e, node.id)}
         >
             {/* Header */}
-            <div className={`h-10 px-3 flex items-center justify-between rounded-t-lg border-b border-white/5 ${def.color} cursor-grab active:cursor-grabbing select-none bg-opacity-20`}>
-                <div className="flex items-center gap-2 font-bold text-[10px] uppercase tracking-wider text-zinc-200">
-                    <Icon className="w-4 h-4 opacity-80" />
+            <div className={`h-10 px-3 flex items-center justify-between rounded-t-xl border-b border-white/5 ${def.color} cursor-grab active:cursor-grabbing select-none`}>
+                <div className="flex items-center gap-2 font-bold text-[10px] uppercase tracking-wider text-zinc-100">
+                    <Icon className="w-4 h-4" />
                     {node.label}
                 </div>
                 <div className="flex items-center gap-2">
@@ -180,9 +189,9 @@ const NodeWidget = React.memo(({
                     {node.status === 'ERROR' && <ExclamationTriangleIcon className="w-3 h-3 text-red-400" />}
                     <button 
                         onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }} 
-                        className="text-zinc-600 hover:text-red-400 ml-1 transition-colors"
+                        className="text-zinc-500 hover:text-red-400 ml-1 transition-colors p-1 rounded hover:bg-white/10"
                     >
-                        <XMarkIcon className="w-4 h-4" />
+                        <XMarkIcon className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
@@ -197,12 +206,12 @@ const NodeWidget = React.memo(({
                         {node.inputs.map((input) => (
                             <div key={input.id} className="h-[20px] flex items-center relative group/handle">
                                 <div 
-                                    className="w-3 h-3 rounded-full border border-zinc-700 bg-[#121214] hover:bg-white hover:scale-125 transition-all cursor-crosshair z-20"
+                                    className="w-3 h-3 rounded-full border border-zinc-700 bg-[#121214] hover:bg-white hover:scale-125 transition-all cursor-crosshair z-20 shadow-sm"
                                     style={{ borderColor: TYPE_COLORS[input.type] }}
                                     onMouseDown={(e) => onHandleMouseDown(e, node.id, input.id, 'input')}
                                     title={`${input.label} (${input.type})`}
                                 />
-                                <span className="ml-2 text-[10px] text-zinc-500 font-medium">{input.label}</span>
+                                <span className="ml-2 text-[9px] font-mono text-zinc-500 group-hover/handle:text-zinc-300 transition-colors">{input.label}</span>
                             </div>
                         ))}
                     </div>
@@ -211,9 +220,9 @@ const NodeWidget = React.memo(({
                     <div className="absolute right-[-6px] top-[10px] flex flex-col gap-[8px] pointer-events-auto w-full">
                         {node.outputs.map((output) => (
                             <div key={output.id} className="h-[20px] flex items-center justify-end relative group/handle">
-                                <span className="mr-2 text-[10px] text-zinc-500 font-medium text-right">{output.label}</span>
+                                <span className="mr-2 text-[9px] font-mono text-zinc-500 group-hover/handle:text-zinc-300 transition-colors text-right">{output.label}</span>
                                 <div 
-                                    className="w-3 h-3 rounded-full border border-zinc-700 bg-[#121214] hover:bg-white hover:scale-125 transition-all cursor-crosshair z-20"
+                                    className="w-3 h-3 rounded-full border border-zinc-700 bg-[#121214] hover:bg-white hover:scale-125 transition-all cursor-crosshair z-20 shadow-sm"
                                     style={{ borderColor: TYPE_COLORS[output.type] }}
                                     onMouseDown={(e) => onHandleMouseDown(e, node.id, output.id, 'output')}
                                     title={`${output.label} (${output.type})`}
@@ -232,7 +241,7 @@ const NodeWidget = React.memo(({
                             value={node.config.value}
                             onChange={(e) => updateNodeConfig(node.id, 'value', e.target.value)}
                             placeholder="Enter text..."
-                            className="bg-zinc-900 border-white/5 text-xs min-h-[60px] resize-y focus:border-indigo-500/50 p-2 rounded"
+                            className="bg-zinc-950 border-white/5 text-xs min-h-[80px] resize-y focus:border-indigo-500/50 p-2 rounded font-mono"
                         />
                     )}
                     
@@ -242,10 +251,10 @@ const NodeWidget = React.memo(({
                                 value={node.config.url}
                                 onChange={(e) => updateNodeConfig(node.id, 'url', e.target.value)}
                                 placeholder="Image URL..."
-                                className="bg-zinc-900 border-white/5 text-xs p-2"
+                                className="bg-zinc-950 border-white/5 text-xs p-2"
                             />
                             {node.config.url && (
-                                <div className="rounded overflow-hidden border border-white/5 h-24 bg-black/20 relative">
+                                <div className="rounded-lg overflow-hidden border border-white/5 h-32 bg-black/20 relative">
                                     <img src={node.config.url} className="w-full h-full object-cover" alt="preview" onError={(e) => (e.currentTarget.src = 'https://placehold.co/300x200?text=Invalid+Image')} />
                                 </div>
                             )}
@@ -257,7 +266,7 @@ const NodeWidget = React.memo(({
                             <select 
                                 value={node.config.model}
                                 onChange={(e) => updateNodeConfig(node.id, 'model', e.target.value)}
-                                className="bg-zinc-900 border border-white/10 rounded w-full py-1.5 px-2 text-[10px] text-zinc-300 focus:outline-none focus:border-indigo-500"
+                                className="bg-zinc-950 border border-white/10 rounded w-full py-1.5 px-2 text-[10px] text-zinc-300 focus:outline-none focus:border-indigo-500 font-mono"
                             >
                                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                                 <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
@@ -265,8 +274,8 @@ const NodeWidget = React.memo(({
                             <Textarea 
                                 value={node.config.prompt}
                                 onChange={(e) => updateNodeConfig(node.id, 'prompt', e.target.value)}
-                                placeholder="System instructions..."
-                                className="bg-zinc-900 border-white/5 text-[10px] min-h-[80px] font-mono p-2"
+                                placeholder="System instructions (Use {{input}} for context)..."
+                                className="bg-zinc-950 border-white/5 text-[10px] min-h-[80px] font-mono p-2 text-zinc-400 focus:text-zinc-200"
                             />
                         </div>
                     )}
@@ -276,17 +285,17 @@ const NodeWidget = React.memo(({
                              <select 
                                 value={node.config.model}
                                 onChange={(e) => updateNodeConfig(node.id, 'model', e.target.value)}
-                                className="bg-zinc-900 border border-white/10 rounded w-full py-1.5 px-2 text-[10px] text-zinc-300 focus:outline-none focus:border-indigo-500"
+                                className="bg-zinc-950 border border-white/10 rounded w-full py-1.5 px-2 text-[10px] text-zinc-300 focus:outline-none focus:border-indigo-500 font-mono"
                             >
                                 <option value="nano-banana-pro">Nano Banana Pro</option>
                                 <option value="bytedance/seedream-v4-text-to-image">Seedream v4</option>
                             </select>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 bg-zinc-950 p-1 rounded border border-white/5">
                                 {['1:1', '16:9', '9:16'].map(r => (
                                     <button 
                                         key={r}
                                         onClick={() => updateNodeConfig(node.id, 'aspectRatio', r)}
-                                        className={`flex-1 py-1 rounded text-[9px] border transition-colors ${node.config.aspectRatio === r ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-zinc-900 border-white/5 text-zinc-500 hover:bg-white/5'}`}
+                                        className={`flex-1 py-1 rounded text-[9px] transition-colors ${node.config.aspectRatio === r ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
                                     >
                                         {r}
                                     </button>
@@ -295,8 +304,8 @@ const NodeWidget = React.memo(({
                             <Input 
                                 value={node.config.prompt}
                                 onChange={(e) => updateNodeConfig(node.id, 'prompt', e.target.value)}
-                                placeholder="Extra details..."
-                                className="bg-zinc-900 border-white/5 text-xs p-2"
+                                placeholder="Additional styling prompts..."
+                                className="bg-zinc-950 border-white/5 text-xs p-2"
                             />
                         </div>
                     )}
@@ -305,17 +314,16 @@ const NodeWidget = React.memo(({
                     {node.result && (
                         <div className="mt-3 pt-3 border-t border-white/5 animate-fade-in">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-[9px] font-bold uppercase text-emerald-500">Output</span>
-                                <button className="text-zinc-600 hover:text-white"><ArrowPathIcon className="w-3 h-3" /></button>
+                                <span className="text-[9px] font-bold uppercase text-emerald-500 tracking-wider">Output</span>
                             </div>
-                            <div className="bg-black/40 rounded border border-white/5 overflow-hidden">
+                            <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden group relative">
                                 {typeof node.result === 'string' && (node.result.startsWith('http') || node.result.startsWith('data:image')) ? (
-                                    <div className="relative group">
-                                        <img src={node.result} className="w-full h-32 object-contain bg-zinc-900/50" alt="Result"/>
+                                    <div className="relative cursor-zoom-in">
+                                        <img src={node.result} className="w-full h-40 object-contain bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-zinc-900/50" alt="Result"/>
                                     </div>
                                 ) : (
-                                    <div className="p-2 max-h-32 overflow-y-auto custom-scrollbar">
-                                        <p className="text-[10px] text-zinc-300 font-mono whitespace-pre-wrap break-words leading-snug">
+                                    <div className="p-3 max-h-32 overflow-y-auto custom-scrollbar bg-zinc-950">
+                                        <p className="text-[10px] text-zinc-300 font-mono whitespace-pre-wrap break-words leading-relaxed">
                                             {typeof node.result === 'object' ? JSON.stringify(node.result, null, 2) : node.result}
                                         </p>
                                     </div>
@@ -325,7 +333,7 @@ const NodeWidget = React.memo(({
                     )}
                     
                     {node.error && (
-                        <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-[10px] text-red-300 flex gap-2 items-start">
+                        <div className="mt-2 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] text-red-300 flex gap-2 items-start animate-pulse">
                             <ExclamationTriangleIcon className="w-3 h-3 flex-shrink-0 mt-0.5" />
                             {node.error}
                         </div>
@@ -339,10 +347,11 @@ const NodeWidget = React.memo(({
 // --- Main Page ---
 
 const WorkflowBuilderPage: React.FC = () => {
+    // Initial Workflow Demo
     const [nodes, setNodes] = useState<NodeData[]>([
-        { id: 'n1', type: 'INPUT_TEXT', x: 100, y: 100, label: 'Concept', inputs: [], outputs: NODE_DEFINITIONS.INPUT_TEXT.outputs, config: { value: 'A cyberpunk street' }, status: 'IDLE' },
-        { id: 'n2', type: 'LLM', x: 450, y: 100, label: 'Prompt Engineer', inputs: NODE_DEFINITIONS.LLM.inputs, outputs: NODE_DEFINITIONS.LLM.outputs, config: { model: 'gemini-2.5-flash', prompt: 'Describe this scene in high detail: {{input}}' }, status: 'IDLE' },
-        { id: 'n3', type: 'IMAGE_GEN', x: 800, y: 100, label: 'Renderer', inputs: NODE_DEFINITIONS.IMAGE_GEN.inputs, outputs: NODE_DEFINITIONS.IMAGE_GEN.outputs, config: { model: 'nano-banana-pro', aspectRatio: '16:9', prompt: '' }, status: 'IDLE' },
+        { id: 'n1', type: 'INPUT_TEXT', x: 100, y: 200, label: 'Concept', inputs: [], outputs: NODE_DEFINITIONS.INPUT_TEXT.outputs, config: { value: 'A cyberpunk street vendor selling neon noodles' }, status: 'IDLE' },
+        { id: 'n2', type: 'LLM', x: 500, y: 200, label: 'Prompt Engineer', inputs: NODE_DEFINITIONS.LLM.inputs, outputs: NODE_DEFINITIONS.LLM.outputs, config: { model: 'gemini-2.5-flash', prompt: 'Convert this concept into a highly detailed image generation prompt with lighting, style, and camera details: {{input}}' }, status: 'IDLE' },
+        { id: 'n3', type: 'IMAGE_GEN', x: 900, y: 200, label: 'Renderer', inputs: NODE_DEFINITIONS.IMAGE_GEN.inputs, outputs: NODE_DEFINITIONS.IMAGE_GEN.outputs, config: { model: 'nano-banana-pro', aspectRatio: '16:9', prompt: '' }, status: 'IDLE' },
     ]);
     const [edges, setEdges] = useState<Edge[]>([
         { id: 'e1', source: 'n1', sourceHandle: 'out', target: 'n2', targetHandle: 'in' },
@@ -368,7 +377,6 @@ const WorkflowBuilderPage: React.FC = () => {
     useEffect(() => { viewportRef.current = viewport; }, [viewport]);
 
     // --- Coordinates ---
-    // Updated to use ref for stable callback logic inside handlers
     const screenToCanvas = useCallback((sx: number, sy: number) => {
         if (!containerRef.current) return { x: 0, y: 0 };
         const rect = containerRef.current.getBoundingClientRect();
@@ -389,7 +397,6 @@ const WorkflowBuilderPage: React.FC = () => {
             if (currentDrag.type === 'PAN') {
                 const dx = e.clientX - currentDrag.startX;
                 const dy = e.clientY - currentDrag.startY;
-                // Use viewportRef for calculation base if needed, but dragging usually uses initial snapshot
                 if (currentDrag.initialViewport) {
                     setViewport({
                         ...currentDrag.initialViewport,
@@ -410,6 +417,7 @@ const WorkflowBuilderPage: React.FC = () => {
                     let newX = currentDrag.initialNodePos.x + dx;
                     let newY = currentDrag.initialNodePos.y + dy;
                     
+                    // Snap to grid
                     newX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
                     newY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
 
@@ -417,7 +425,6 @@ const WorkflowBuilderPage: React.FC = () => {
                 }
             }
             else if (currentDrag.type === 'CONNECTION') {
-                // Use updated screenToCanvas which uses viewportRef
                 const currentCanvas = screenToCanvas(e.clientX, e.clientY);
                 setTempConnection(prev => prev ? { ...prev, x2: currentCanvas.x, y2: currentCanvas.y } : null);
             }
@@ -429,10 +436,9 @@ const WorkflowBuilderPage: React.FC = () => {
             if (currentDrag?.type === 'CONNECTION') {
                 // Connection Finalization Logic
                 const endCanvas = screenToCanvas(e.clientX, e.clientY);
-                const SNAP_RADIUS = 30;
+                const SNAP_RADIUS = 40;
                 let targetMatch: { nodeId: string, handleId: string, type: DataType } | null = null;
 
-                // Use ref current value for nodes to ensure freshness without dependency churn
                 const currentNodes = nodesRef.current;
 
                 // Check against all potential handles
@@ -448,9 +454,10 @@ const WorkflowBuilderPage: React.FC = () => {
                         
                         if (dist < SNAP_RADIUS) {
                             // Type Validation
+                            const sourceNode = currentNodes.find(n => n.id === currentDrag.sourceNodeId);
                             const sourceHandleDef = currentDrag.handleType === 'output' 
-                                ? currentNodes.find(n=>n.id===currentDrag.sourceNodeId)?.outputs.find(h=>h.id===currentDrag.sourceHandleId)
-                                : currentNodes.find(n=>n.id===currentDrag.sourceNodeId)?.inputs.find(h=>h.id===currentDrag.sourceHandleId);
+                                ? sourceNode?.outputs.find(h => h.id === currentDrag.sourceHandleId)
+                                : sourceNode?.inputs.find(h => h.id === currentDrag.sourceHandleId);
                             
                             const sourceType = sourceHandleDef?.type;
                             
@@ -494,7 +501,7 @@ const WorkflowBuilderPage: React.FC = () => {
             window.removeEventListener('mousemove', handleWindowMouseMove);
             window.removeEventListener('mouseup', handleWindowMouseUp);
         };
-    }, [screenToCanvas]); // Dependency array kept minimal
+    }, [screenToCanvas]);
 
     // --- Logic ---
 
@@ -513,7 +520,6 @@ const WorkflowBuilderPage: React.FC = () => {
         const cx = container ? container.clientWidth / 2 : 500;
         const cy = container ? container.clientHeight / 2 : 400;
         
-        // Use viewport ref for accurate center positioning relative to zoom/pan
         const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
         const vp = viewportRef.current;
         
@@ -537,14 +543,21 @@ const WorkflowBuilderPage: React.FC = () => {
         setNodes(prev => [...prev, newNode]);
     };
 
+    // --- EXECTUTION ENGINE ---
     const runWorkflow = async () => {
         if (isRunning) return;
         setIsRunning(true);
-        setNodes(prev => prev.map(n => ({ ...n, status: 'IDLE', error: undefined })));
+        setNodes(prev => prev.map(n => ({ ...n, status: 'IDLE', error: undefined, result: undefined })));
 
+        // 1. Build Dependency Graph
         const graph = new Map<string, string[]>();
         const inDegree = new Map<string, number>();
-        nodes.forEach(n => { graph.set(n.id, []); inDegree.set(n.id, 0); });
+        
+        nodes.forEach(n => { 
+            graph.set(n.id, []); 
+            inDegree.set(n.id, 0); 
+        });
+        
         edges.forEach(e => {
             if (graph.has(e.source) && inDegree.has(e.target)) {
                 graph.get(e.source)!.push(e.target);
@@ -552,44 +565,83 @@ const WorkflowBuilderPage: React.FC = () => {
             }
         });
 
+        // 2. Topological Sort / Queue
         const queue = nodes.filter(n => inDegree.get(n.id) === 0);
         
         try {
             while (queue.length > 0) {
                 const current = queue.shift()!;
+                
+                // Set Running Status
                 setNodes(prev => prev.map(n => n.id === current.id ? { ...n, status: 'RUNNING' } : n));
                 
-                const incoming = edges.filter(e => e.target === current.id);
-                const inputValues = incoming.map(e => nodes.find(n => n.id === e.source)?.result).filter(v => v !== undefined);
+                // Gather Inputs from previous nodes
+                const incomingEdges = edges.filter(e => e.target === current.id);
+                const inputValues = incomingEdges.map(e => {
+                    const sourceNode = nodesRef.current.find(n => n.id === e.source);
+                    return sourceNode?.result;
+                }).filter(v => v !== undefined && v !== null);
 
                 let result: any = null;
-                await new Promise(r => setTimeout(r, 800)); 
+                
+                // Artificial delay for visual flow
+                await new Promise(r => setTimeout(r, 1000)); 
 
-                if (current.type === 'INPUT_TEXT') result = current.config.value;
-                else if (current.type === 'INPUT_IMAGE') result = current.config.url;
+                // EXECUTION LOGIC
+                if (current.type === 'INPUT_TEXT') {
+                    result = current.config.value;
+                }
+                else if (current.type === 'INPUT_IMAGE') {
+                    result = current.config.url;
+                }
                 else if (current.type === 'LLM') {
-                    const prompt = current.config.prompt.replace('{{input}}', inputValues.join('\n') || '');
+                    // Simple variable substitution for now: {{input}}
+                    // If multiple inputs, join them
+                    const context = inputValues.join('\n\n');
+                    let prompt = current.config.prompt || '';
+                    if (prompt.includes('{{input}}')) {
+                        prompt = prompt.replace('{{input}}', context);
+                    } else {
+                        prompt = `${prompt}\n\nInput Context:\n${context}`;
+                    }
+                    
                     result = await aiService.generateText(prompt, current.config.model);
                 }
                 else if (current.type === 'IMAGE_GEN') {
                     let prompt = current.config.prompt || '';
                     const context = inputValues.join(' ');
-                    prompt = prompt.includes('{{input}}') ? prompt.replace('{{input}}', context) : `${context} ${prompt}`;
-                    if (!prompt.trim()) prompt = "Abstract art";
-                    result = await aiService.generateImage(prompt, current.config.aspectRatio, current.config.model);
+                    
+                    if (prompt.includes('{{input}}')) {
+                        prompt = prompt.replace('{{input}}', context);
+                    } else if (context) {
+                        prompt = `${context} ${prompt}`;
+                    }
+                    
+                    if (!prompt.trim()) prompt = "Abstract creative art";
+                    
+                    const results = await aiService.generateImage(prompt, current.config.aspectRatio, current.config.model);
+                    result = results[0];
                 }
-                else if (current.type === 'VIEWER') result = inputValues[0];
+                else if (current.type === 'VIEWER') {
+                    result = inputValues[0]; // Pass through for viewer
+                }
 
+                // Update Node with Result
                 setNodes(prev => prev.map(n => n.id === current.id ? { ...n, status: 'SUCCESS', result } : n));
 
+                // Process Neighbors
                 const neighbors = graph.get(current.id) || [];
                 for (const neighborId of neighbors) {
                     inDegree.set(neighborId, inDegree.get(neighborId)! - 1);
-                    if (inDegree.get(neighborId) === 0) queue.push(nodes.find(n => n.id === neighborId)!);
+                    if (inDegree.get(neighborId) === 0) {
+                        queue.push(nodesRef.current.find(n => n.id === neighborId)!);
+                    }
                 }
             }
         } catch (e: any) {
-            setNodes(prev => prev.map(n => n.status === 'RUNNING' ? { ...n, status: 'ERROR', error: e.message } : n));
+            console.error("Workflow Error", e);
+            // Find the current running node and mark error
+            setNodes(prev => prev.map(n => n.status === 'RUNNING' ? { ...n, status: 'ERROR', error: e.message || 'Execution failed' } : n));
         } finally {
             setIsRunning(false);
         }
@@ -597,6 +649,7 @@ const WorkflowBuilderPage: React.FC = () => {
 
     const getPath = (x1: number, y1: number, x2: number, y2: number) => {
         const dist = Math.abs(x2 - x1);
+        // Control points for smooth Bezier
         const control = Math.max(dist * 0.5, 80);
         return `M ${x1} ${y1} C ${x1 + control} ${y1}, ${x2 - control} ${y2}, ${x2} ${y2}`;
     };
@@ -620,34 +673,51 @@ const WorkflowBuilderPage: React.FC = () => {
     }, [screenToCanvas]);
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] bg-[#050505] text-white overflow-hidden font-sans relative">
+        <div className="flex h-[calc(100vh-4rem)] bg-[#050505] text-white overflow-hidden font-sans relative selection:bg-indigo-500/30">
             
-            {/* Toolbar */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-lg border border-white/10 p-1.5 rounded-xl shadow-2xl ring-1 ring-black/50">
+            {/* Floating Toolbar */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-[#121214]/80 backdrop-blur-xl border border-white/10 p-2 rounded-2xl shadow-2xl ring-1 ring-black/50 animate-fade-in-up">
                 <button 
                     onClick={runWorkflow} 
                     disabled={isRunning} 
-                    className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all shadow-lg ${isRunning ? 'bg-zinc-800 text-zinc-500' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'}`}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg ${isRunning ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:shadow-indigo-500/40 text-white'}`}
                 >
-                    {isRunning ? <StopIcon className="w-4 h-4 animate-pulse"/> : <PlayIcon className="w-4 h-4"/>}
-                    {isRunning ? 'Executing...' : 'Run Workflow'}
+                    {isRunning ? <ArrowPathIcon className="w-4 h-4 animate-spin"/> : <PlayIcon className="w-4 h-4"/>}
+                    {isRunning ? 'Running...' : 'Execute Workflow'}
                 </button>
-                <div className="w-px h-6 bg-white/10 mx-2"></div>
-                <button onClick={() => setViewport(v => ({...v, zoom: Math.max(v.zoom - 0.1, 0.2)}))} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400"><MagnifyingGlassMinusIcon className="w-4 h-4"/></button>
-                <span className="text-[10px] font-mono text-zinc-500 w-10 text-center">{Math.round(viewport.zoom * 100)}%</span>
-                <button onClick={() => setViewport(v => ({...v, zoom: Math.min(v.zoom + 0.1, 3)}))} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400"><MagnifyingGlassPlusIcon className="w-4 h-4"/></button>
+                
+                <div className="w-px h-6 bg-white/10 mx-1"></div>
+                
+                <button onClick={() => setViewport(v => ({...v, zoom: Math.max(v.zoom - 0.1, 0.2)}))} className="p-2.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors">
+                    <MagnifyingGlassMinusIcon className="w-4 h-4"/>
+                </button>
+                <span className="text-[10px] font-mono text-zinc-500 w-12 text-center">{Math.round(viewport.zoom * 100)}%</span>
+                <button onClick={() => setViewport(v => ({...v, zoom: Math.min(v.zoom + 0.1, 2)}))} className="p-2.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors">
+                    <MagnifyingGlassPlusIcon className="w-4 h-4"/>
+                </button>
+                
+                <div className="w-px h-6 bg-white/10 mx-1"></div>
+                
+                <button 
+                    onClick={() => { setNodes([]); setEdges([]); }}
+                    className="p-2.5 hover:bg-red-500/10 hover:text-red-400 rounded-xl text-zinc-400 transition-colors" 
+                    title="Clear All"
+                >
+                    <TrashIcon className="w-4 h-4"/>
+                </button>
             </div>
 
             {/* Nodes Palette */}
-            <div className="absolute top-4 left-4 z-40 flex flex-col gap-2">
-                <div className="bg-zinc-900/90 backdrop-blur border border-white/10 rounded-xl p-2 shadow-2xl flex flex-col gap-2">
+            <div className="absolute top-6 left-6 z-40 flex flex-col gap-3 animate-fade-in">
+                <div className="bg-[#121214]/90 backdrop-blur border border-white/10 rounded-2xl p-3 shadow-2xl flex flex-col gap-2 w-48">
+                    <h3 className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest mb-1 px-2">Nodes</h3>
                     {Object.entries(NODE_DEFINITIONS).map(([type, def]) => (
                         <button 
                             key={type}
                             onClick={() => addNode(type as NodeType)}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-white transition-colors group w-40"
+                            className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 text-zinc-400 hover:text-white transition-all group border border-transparent hover:border-white/5"
                         >
-                            <div className={`p-1.5 rounded-md bg-opacity-10 ${def.color.split(' ')[1]}`}>
+                            <div className={`p-1.5 rounded-lg bg-opacity-10 ${def.color.split(' ')[1]} group-hover:scale-110 transition-transform`}>
                                 <def.icon className={`w-4 h-4 ${def.color.split(' ')[2]}`} />
                             </div>
                             <span className="text-xs font-medium">{def.label}</span>
@@ -656,10 +726,10 @@ const WorkflowBuilderPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Canvas */}
+            {/* Canvas Area */}
             <div 
                 ref={containerRef}
-                className="flex-1 relative overflow-hidden cursor-default canvas-bg outline-none"
+                className="flex-1 relative overflow-hidden cursor-default canvas-bg outline-none bg-[#050505]"
                 onMouseDown={(e) => {
                     const isBackground = (e.target as HTMLElement).classList.contains('canvas-bg');
                     if (e.button === 1 || (e.button === 0 && isSpacePressed.current) || (e.button === 0 && isBackground)) {
@@ -669,6 +739,7 @@ const WorkflowBuilderPage: React.FC = () => {
                     }
                 }}
                 onWheel={(e) => {
+                    // Pinch/Zoom logic
                     const zoomIntensity = 0.001;
                     const newZoom = Math.min(Math.max(viewport.zoom - e.deltaY * zoomIntensity, 0.2), 2.5);
                     const rect = containerRef.current!.getBoundingClientRect();
@@ -680,13 +751,13 @@ const WorkflowBuilderPage: React.FC = () => {
                 }}
                 tabIndex={0}
             >
-                {/* Dot Grid */}
+                {/* Infinite Grid Pattern */}
                 <div 
                     className="absolute inset-0 pointer-events-none opacity-[0.15] canvas-bg"
                     style={{
                         backgroundSize: `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
                         backgroundPosition: `${viewport.x}px ${viewport.y}px`,
-                        backgroundImage: `radial-gradient(circle, #71717a 1px, transparent 1px)`
+                        backgroundImage: `radial-gradient(circle, #52525b 1px, transparent 1px)`
                     }}
                 />
 
@@ -694,11 +765,17 @@ const WorkflowBuilderPage: React.FC = () => {
                     {/* Edges Layer */}
                     <svg className="absolute top-0 left-0 w-full h-full overflow-visible pointer-events-none z-0">
                         <defs>
-                            <linearGradient id="gradient-flow" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0" />
-                                <stop offset="50%" stopColor="#6366f1" stopOpacity="1" />
-                                <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
+                            <linearGradient id="edge-gradient" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.5" />
                             </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
                         </defs>
                         {edges.map(edge => {
                             const start = getHandleCoords(edge.source, edge.sourceHandle, 'output', nodes);
@@ -710,18 +787,23 @@ const WorkflowBuilderPage: React.FC = () => {
 
                             return (
                                 <g key={edge.id} onClick={() => setEdges(edges.filter(e => e.id !== edge.id))} className="pointer-events-auto cursor-pointer group">
+                                    {/* Invisible fat stroke for easier clicking */}
                                     <path d={path} stroke="transparent" strokeWidth="20" fill="none" />
+                                    {/* Base Stroke */}
                                     <path d={path} stroke="#27272a" strokeWidth="4" fill="none" />
+                                    {/* Active/Color Stroke */}
                                     <path 
                                         d={path} 
-                                        stroke={isActive ? '#6366f1' : '#52525b'} 
+                                        stroke={isActive ? 'url(#edge-gradient)' : '#52525b'} 
                                         strokeWidth="2" 
                                         fill="none" 
-                                        className="transition-colors duration-500 group-hover:stroke-red-500" 
+                                        className="transition-colors duration-500 group-hover:stroke-red-500"
+                                        filter={isActive ? 'url(#glow)' : ''}
                                     />
+                                    {/* Flow Particle */}
                                     {isActive && (
                                         <circle r="3" fill="#fff">
-                                            <animateMotion dur="1.5s" repeatCount="indefinite" path={path} keyPoints="0;1" keyTimes="0;1" calcMode="linear" />
+                                            <animateMotion dur="1s" repeatCount="indefinite" path={path} keyPoints="0;1" keyTimes="0;1" calcMode="linear" />
                                         </circle>
                                     )}
                                 </g>
@@ -751,15 +833,15 @@ const WorkflowBuilderPage: React.FC = () => {
             </div>
 
             {/* Minimap */}
-            <div className="absolute bottom-6 right-6 z-40 w-48 h-32 bg-zinc-900/80 backdrop-blur border border-white/10 rounded-lg overflow-hidden shadow-2xl pointer-events-none">
-                <div className="relative w-full h-full opacity-50">
+            <div className="absolute bottom-6 right-6 z-40 w-48 h-32 bg-[#121214]/80 backdrop-blur border border-white/10 rounded-xl overflow-hidden shadow-2xl pointer-events-none ring-1 ring-black/50">
+                <div className="relative w-full h-full opacity-70">
                     {nodes.map(n => (
                         <div 
                             key={n.id} 
-                            className={`absolute w-2 h-1 rounded-sm ${n.status === 'SUCCESS' ? 'bg-emerald-500' : n.status === 'ERROR' ? 'bg-red-500' : 'bg-zinc-500'}`}
+                            className={`absolute w-2 h-1.5 rounded-sm ${n.status === 'SUCCESS' ? 'bg-emerald-500' : n.status === 'ERROR' ? 'bg-red-500' : 'bg-zinc-500'}`}
                             style={{
-                                left: `${(n.x / 3000) * 100 + 20}%`, // Crude approximation for demo
-                                top: `${(n.y / 2000) * 100 + 20}%`
+                                left: `${(n.x / 4000) * 100 + 20}%`, // Adjusted scale mapping for demo
+                                top: `${(n.y / 3000) * 100 + 20}%`
                             }}
                         />
                     ))}
