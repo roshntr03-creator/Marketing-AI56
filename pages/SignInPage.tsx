@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
@@ -33,9 +34,13 @@ const SignInPage: React.FC = () => {
       }, 1000);
   };
 
+  const handleForgotPassword = (e: React.MouseEvent) => {
+      e.preventDefault();
+      alert("Reset link sent to your email address.");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center relative bg-[#09090b] overflow-hidden font-sans text-zinc-100">
-      {/* Aurora Background */}
       <div className="absolute top-[-20%] left-[-20%] w-[50%] h-[50%] bg-indigo-900/20 rounded-full blur-[100px]"></div>
       <div className="absolute bottom-[-20%] right-[-20%] w-[50%] h-[50%] bg-purple-900/20 rounded-full blur-[100px]"></div>
 
@@ -70,7 +75,7 @@ const SignInPage: React.FC = () => {
             />
             
             <div className="flex items-center justify-end">
-                <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Forgot password?</a>
+                <button onClick={handleForgotPassword} className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Forgot password?</button>
             </div>
 
             <div className="pt-2">

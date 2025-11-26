@@ -14,15 +14,9 @@ import {
     SparklesIcon,
     CpuChipIcon,
     PhotoIcon,
-    BoltIcon,
-    CommandLineIcon,
-    DocumentTextIcon,
-    GlobeAltIcon,
-    LockClosedIcon,
-    AdjustmentsHorizontalIcon,
-    FingerPrintIcon,
     SignalIcon,
-    CurrencyDollarIcon
+    CurrencyDollarIcon,
+    LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { PRICING_PLANS, CREDIT_COSTS_DISPLAY } from '../constants';
 
@@ -34,9 +28,7 @@ const BRANDS = [
 ];
 
 // --- New Component: Creative Engine Visualization ---
-// A centralized, meaningful animation showing the "Brain" orchestrating tasks.
 const CreativeEngine = () => {
-    // Phases: 0 = Idle, 1 = Analysis, 2 = Generation, 3 = Deployment
     const [phase, setPhase] = useState(0);
 
     useEffect(() => {
@@ -66,11 +58,8 @@ const CreativeEngine = () => {
 
                 {/* Connection Lines (Dynamic) */}
                 <svg className="absolute inset-0 w-full h-full z-10">
-                     {/* Line to Satellite 1 (Strategy) */}
                      <line x1="50%" y1="50%" x2="20%" y2="30%" stroke="url(#grad1)" strokeWidth="1" className={`transition-opacity duration-500 ${phase >= 1 ? 'opacity-100' : 'opacity-10'}`} />
-                     {/* Line to Satellite 2 (Video) */}
                      <line x1="50%" y1="50%" x2="80%" y2="30%" stroke="url(#grad1)" strokeWidth="1" className={`transition-opacity duration-500 ${phase >= 2 ? 'opacity-100' : 'opacity-10'}`} />
-                     {/* Line to Satellite 3 (Image) */}
                      <line x1="50%" y1="50%" x2="50%" y2="85%" stroke="url(#grad1)" strokeWidth="1" className={`transition-opacity duration-500 ${phase >= 3 ? 'opacity-100' : 'opacity-10'}`} />
                      
                      <defs>
@@ -83,8 +72,6 @@ const CreativeEngine = () => {
                 </svg>
 
                 {/* Satellite Modules */}
-                
-                {/* Module 1: Strategy (Top Left) */}
                 <div className={`absolute top-[25%] left-[15%] transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${phase === 1 ? 'scale-110 brightness-125' : 'scale-100 opacity-50'}`}>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/80 border border-white/10 backdrop-blur-md shadow-xl">
                         <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
@@ -98,7 +85,6 @@ const CreativeEngine = () => {
                     </div>
                 </div>
 
-                {/* Module 2: Video (Top Right) */}
                 <div className={`absolute top-[25%] right-[15%] transform translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${phase === 2 ? 'scale-110 brightness-125' : 'scale-100 opacity-50'}`}>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/80 border border-white/10 backdrop-blur-md shadow-xl">
                         <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
@@ -112,7 +98,6 @@ const CreativeEngine = () => {
                     </div>
                 </div>
 
-                 {/* Module 3: Content (Bottom Center) */}
                  <div className={`absolute bottom-[10%] left-[50%] transform -translate-x-1/2 translate-y-1/2 transition-all duration-1000 ${phase === 3 ? 'scale-110 brightness-125' : 'scale-100 opacity-50'}`}>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/80 border border-white/10 backdrop-blur-md shadow-xl">
                         <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
@@ -126,7 +111,6 @@ const CreativeEngine = () => {
                     </div>
                 </div>
 
-                {/* Floating Data Packets */}
                 <div className="absolute top-[35%] left-[35%] w-2 h-2 bg-white rounded-full blur-[1px] animate-[float_4s_ease-in-out_infinite]"></div>
                 <div className="absolute top-[60%] right-[40%] w-1.5 h-1.5 bg-indigo-400 rounded-full blur-[1px] animate-[float_5s_ease-in-out_infinite]"></div>
             </div>
@@ -134,7 +118,7 @@ const CreativeEngine = () => {
     );
 };
 
-// --- Showcase Section Component (Kept from previous version) ---
+// --- Showcase Section Component ---
 const ShowcaseSection = () => {
   return (
     <div className="relative w-full max-w-7xl mx-auto mt-16 perspective-1000 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
@@ -142,7 +126,6 @@ const ShowcaseSection = () => {
          
          {/* SORA 2 VIDEO SHOWCASE */}
          <div className="relative group">
-             {/* Model Header */}
              <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-3">
                     <div className="px-3 py-1.5 rounded-md bg-zinc-900/80 border border-white/10 text-white text-xs font-bold font-display tracking-wider shadow-lg backdrop-blur-md flex items-center gap-2 group-hover:border-indigo-500/50 transition-colors">
@@ -153,9 +136,7 @@ const ShowcaseSection = () => {
                 </div>
              </div>
 
-             {/* Window Container */}
              <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#09090b] shadow-2xl ring-1 ring-white/5 transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,0,0,0.5)] group-hover:border-white/20">
-                  {/* Window Chrome */}
                   <div className="h-10 bg-zinc-900/90 backdrop-blur border-b border-white/5 flex items-center px-4 gap-3 select-none">
                        <div className="flex gap-1.5">
                             <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50"></div>
@@ -167,15 +148,12 @@ const ShowcaseSection = () => {
                        </div>
                   </div>
                   
-                  {/* Video Area */}
                   <div className="aspect-video bg-black relative group-hover:shadow-inner">
                        <video 
                            src="https://file.aiquickdraw.com/custom-page/akr/section-images/1760182741759dipnk388.mp4" 
                            autoPlay loop muted playsInline 
                            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500"
                        />
-                       
-                       {/* Floating Controls */}
                        <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
                             <div className="bg-black/60 backdrop-blur px-3 py-2 rounded-lg border border-white/10 flex gap-3 items-center">
                                 <PlayIcon className="w-3 h-3 text-white fill-white" />
@@ -190,7 +168,6 @@ const ShowcaseSection = () => {
 
          {/* GROK 3 IMAGE SHOWCASE */}
          <div className="relative group delay-75">
-             {/* Model Header */}
              <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-3">
                     <div className="px-3 py-1.5 rounded-md bg-zinc-900/80 border border-white/10 text-white text-xs font-bold font-display tracking-wider shadow-lg backdrop-blur-md flex items-center gap-2 group-hover:border-blue-500/50 transition-colors">
@@ -201,9 +178,7 @@ const ShowcaseSection = () => {
                 </div>
              </div>
 
-             {/* Window Container */}
              <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#09090b] shadow-2xl ring-1 ring-white/5 transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,0,0,0.5)] group-hover:border-white/20">
-                  {/* Window Chrome */}
                   <div className="h-10 bg-zinc-900/90 backdrop-blur border-b border-white/5 flex items-center px-4 gap-3 select-none">
                        <div className="flex gap-1.5">
                             <div className="w-2.5 h-2.5 rounded-full bg-zinc-700"></div>
@@ -214,7 +189,6 @@ const ShowcaseSection = () => {
                         </div>
                   </div>
                   
-                  {/* Image Grid Area */}
                   <div className="aspect-video bg-black relative overflow-hidden grid grid-cols-3 grid-rows-2 gap-[1px]">
                        <img src="https://tempfile.aiquickdraw.com/r/a799dda2-1537-4e93-9256-e2e24a420e21.png" className="w-full h-full object-cover" alt="Grok result 1" />
                        <img src="https://tempfile.aiquickdraw.com/r/e2e57053-4cd3-47c6-90a0-e2a7060fcd78.png" className="w-full h-full object-cover" alt="Grok result 2" />
@@ -222,11 +196,9 @@ const ShowcaseSection = () => {
                        <img src="https://tempfile.aiquickdraw.com/r/43984148-916a-44d6-9d68-ff0dc3d2fb23.png" className="w-full h-full object-cover" alt="Grok result 4" />
                        <img src="https://tempfile.aiquickdraw.com/r/cdcbf25b-8fa5-4472-a8c4-169d1690c6bd.png" className="w-full h-full object-cover" alt="Grok result 5" />
                        <img src="https://tempfile.aiquickdraw.com/r/382f80b4-2294-43ef-b04a-0a5650a3c85c.png" className="w-full h-full object-cover" alt="Grok result 6" />
-                       
                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                   </div>
                   
-                   {/* Editor Footer Simulation */}
                   <div className="h-12 bg-[#0e0e10] border-t border-white/5 flex items-center justify-between px-4">
                        <div className="flex gap-1 opacity-30 group-hover:opacity-60 transition-opacity">
                            {[...Array(8)].map((_, i) => (
@@ -243,7 +215,6 @@ const ShowcaseSection = () => {
 
          {/* SEEDREAM v4 IMAGE SHOWCASE */}
          <div className="relative group delay-100">
-             {/* Model Header */}
              <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-3">
                     <div className="px-3 py-1.5 rounded-md bg-zinc-900/80 border border-white/10 text-white text-xs font-bold font-display tracking-wider shadow-lg backdrop-blur-md flex items-center gap-2 group-hover:border-purple-500/50 transition-colors">
@@ -254,9 +225,7 @@ const ShowcaseSection = () => {
                 </div>
              </div>
 
-             {/* Window Container */}
              <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#09090b] shadow-2xl ring-1 ring-white/5 transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,0,0,0.5)] group-hover:border-white/20">
-                  {/* Window Chrome */}
                   <div className="h-10 bg-zinc-900/90 backdrop-blur border-b border-white/5 flex items-center px-4 gap-3 select-none">
                        <div className="flex gap-1.5">
                             <div className="w-2.5 h-2.5 rounded-full bg-zinc-700"></div>
@@ -267,7 +236,6 @@ const ShowcaseSection = () => {
                         </div>
                   </div>
                   
-                  {/* Image Area - Fully Visible */}
                   <div className="aspect-video bg-black relative overflow-hidden flex items-center justify-center">
                        <img 
                             src="https://tempfile.aiquickdraw.com/h/7bbebf4da56bb54915c02a2dee560839_1763648214.png"
@@ -277,13 +245,11 @@ const ShowcaseSection = () => {
                        
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
 
-                        {/* Info Badge */}
                         <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 backdrop-blur border border-white/10 rounded text-[9px] text-zinc-300 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
                             2K Res
                         </div>
                   </div>
                   
-                   {/* Editor Footer Simulation */}
                   <div className="h-12 bg-[#0e0e10] border-t border-white/5 flex items-center justify-between px-4">
                        <div className="flex gap-1 opacity-30 group-hover:opacity-60 transition-opacity">
                            {[...Array(8)].map((_, i) => (
@@ -307,10 +273,8 @@ const ShowcaseSection = () => {
 const BackgroundGrid = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
-    {/* Gradient Orbs */}
     <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-900/10 rounded-full blur-[150px]"></div>
     <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-900/10 rounded-full blur-[150px]"></div>
-    {/* Grid Lines */}
     <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
   </div>
 );
@@ -320,15 +284,25 @@ const LandingPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [isTransitioning, setIsTransitioning] = useState(false);
 
-    const handleGetStarted = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Start the intro animation
+    const handleGetStarted = (e?: React.FormEvent) => {
+        if(e) e.preventDefault();
         setIsTransitioning(true);
-        
-        // Navigate after animation plays
         setTimeout(() => {
             navigate('/signup');
         }, 2500);
+    };
+
+    const scrollToSection = (id: string) => {
+        const element = document.getElementById(id);
+        if (element) {
+            const headerOffset = 100;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.scrollY - headerOffset;
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth"
+            });
+        }
     };
 
     return (
@@ -336,22 +310,15 @@ const LandingPage: React.FC = () => {
             <BackgroundGrid />
             <CreativeEngine />
 
-            {/* INTRO MOTION GRAPHIC OVERLAY */}
             {isTransitioning && (
                 <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center animate-fade-in">
-                    {/* Animated Background Glow */}
                     <div className="absolute inset-0 overflow-hidden">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/20 blur-[120px] rounded-full animate-pulse"></div>
                     </div>
-
                     <div className="relative z-10 flex flex-col items-center">
-                        
-                        {/* Animated Text */}
                         <h1 className="text-5xl font-bold font-display text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tight animate-[fadeInUp_0.8s_cubic-bezier(0.16,1,0.3,1)_forwards]">
                             Marketing AI
                         </h1>
-                        
-                        {/* Loading Indicator */}
                         <div className="mt-8 w-48 h-1 bg-zinc-800 rounded-full overflow-hidden">
                             <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-[loading_2s_ease-in-out_infinite]" style={{ width: '100%', transformOrigin: 'left', animationName: 'slideRight' }}></div>
                         </div>
@@ -366,19 +333,18 @@ const LandingPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Navbar */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
                 <div className="w-full px-6 md:px-12 h-20 flex items-center justify-between">
                     <Logo href="/" textClassName="text-xl font-bold tracking-tight text-white font-display" />
                     <div className="flex items-center gap-8">
                         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-400">
-                            <a href="#features" className="hover:text-white transition-colors">Platform</a>
-                            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-                            <a href="#" className="hover:text-white transition-colors">Enterprise</a>
+                            <button onClick={() => scrollToSection('features')} className="hover:text-white transition-colors">Platform</button>
+                            <button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">Pricing</button>
+                            <button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">Enterprise</button>
                         </div>
                         <div className="flex items-center gap-4">
                             <Link to="/signin" className="text-sm font-medium text-zinc-300 hover:text-white transition-colors px-4 py-2">Log In</Link>
-                            <button onClick={handleGetStarted}>
+                            <button onClick={() => handleGetStarted()}>
                                 <Button size="sm" variant="primary" className="rounded-lg px-5 shadow-lg shadow-indigo-500/20 border border-indigo-400/20">Get Started</Button>
                             </button>
                         </div>
@@ -386,9 +352,7 @@ const LandingPage: React.FC = () => {
                 </div>
             </header>
 
-            {/* Hero Section */}
             <main className="relative z-10 pt-40 pb-32 text-center overflow-hidden min-h-screen flex flex-col justify-center">
-                
                 <div className="px-6 relative z-20">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-10 animate-fade-in hover:bg-white/10 transition-colors cursor-default backdrop-blur-md shadow-lg shadow-black/50">
                         <SparklesIcon className="w-4 h-4 text-indigo-400" />
@@ -423,41 +387,31 @@ const LandingPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* TRIPLE SHOWCASE GRID */}
                 <ShowcaseSection />
                 
-                {/* Trusted By / Social Proof (MARQUEE) */}
                 <div className="mt-32 border-t border-white/5 pt-12 w-full overflow-hidden">
                      <p className="text-sm font-medium text-zinc-500 uppercase tracking-widest mb-12 text-center">Trusted by innovative teams at</p>
-                     
                      <div className="relative flex w-full overflow-hidden">
-                         {/* Scroller Track */}
                          <div className="flex animate-scroll whitespace-nowrap hover:[animation-play-state:paused]">
-                             {/* Set 1 */}
                              {BRANDS.map((brand) => (
                                  <div key={brand} className="mx-8 md:mx-16 flex items-center gap-4 group cursor-default select-none">
                                      <span className="text-xl md:text-2xl font-bold font-display text-zinc-700 group-hover:text-zinc-200 transition-colors duration-300">{brand}</span>
                                  </div>
                              ))}
-                             {/* Set 2 (Duplicate) */}
                              {BRANDS.map((brand) => (
                                  <div key={`${brand}-dup`} className="mx-8 md:mx-16 flex items-center gap-4 group cursor-default select-none">
                                      <span className="text-xl md:text-2xl font-bold font-display text-zinc-700 group-hover:text-zinc-200 transition-colors duration-300">{brand}</span>
                                  </div>
                              ))}
                          </div>
-                         
-                         {/* Gradient Masks */}
                          <div className="absolute top-0 left-0 h-full w-24 md:w-48 bg-gradient-to-r from-[#050505] to-transparent z-10 pointer-events-none"></div>
                          <div className="absolute top-0 right-0 h-full w-24 md:w-48 bg-gradient-to-l from-[#050505] to-transparent z-10 pointer-events-none"></div>
                      </div>
                 </div>
             </main>
 
-            {/* Features - Bento Grid - REDESIGNED */}
             <section id="features" className="py-32 px-6 relative z-10 border-t border-white/5 bg-[#050505]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.05),transparent_40%)] pointer-events-none"></div>
-                
                 <div className="max-w-7xl mx-auto relative">
                     <div className="mb-20 max-w-3xl">
                         <div className="flex items-center gap-2 text-indigo-500 font-bold text-sm uppercase tracking-widest mb-4">
@@ -471,13 +425,8 @@ const LandingPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[800px]">
-                        
-                        {/* 1. Generative Video Engine (Large Card) */}
                         <div className="md:col-span-2 md:row-span-2 rounded-[2rem] bg-[#08080a] border border-white/10 overflow-hidden relative group hover:border-indigo-500/30 transition-all duration-500 shadow-2xl hover:shadow-[0_0_60px_rgba(79,70,229,0.15)] flex flex-col">
-                            {/* Background Noise */}
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
-                            
-                            {/* Content */}
                             <div className="relative z-10 p-10 flex flex-col h-full">
                                 <div className="flex justify-between items-start mb-12">
                                     <div className="p-3 rounded-2xl bg-zinc-900/80 border border-white/10 text-white shadow-lg backdrop-blur-md group-hover:scale-110 transition-transform duration-500">
@@ -487,7 +436,6 @@ const LandingPage: React.FC = () => {
                                         Sora 2.0 Native
                                     </div>
                                 </div>
-                                
                                 <div className="mb-12 relative z-20">
                                     <h3 className="text-3xl font-display font-bold text-white mb-4 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">Generative Video Engine</h3>
                                     <p className="text-zinc-400 max-w-md leading-relaxed">
@@ -495,10 +443,7 @@ const LandingPage: React.FC = () => {
                                         Multi-track sequencing, real-time rendering, and precise camera controls.
                                     </p>
                                 </div>
-                                
-                                {/* UI SIMULATION: Video Editor */}
                                 <div className="flex-1 bg-[#0a0a0c] rounded-t-2xl border-t border-l border-r border-white/10 relative overflow-hidden shadow-2xl mt-auto translate-y-6 group-hover:translate-y-0 transition-transform duration-500 ease-out">
-                                     {/* Header Bar */}
                                      <div className="h-8 border-b border-white/5 bg-black/40 flex items-center px-3 justify-between">
                                          <div className="flex gap-1.5">
                                              <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
@@ -509,11 +454,8 @@ const LandingPage: React.FC = () => {
                                              REC 00:04:12:00
                                          </div>
                                      </div>
-                                     
-                                     {/* Main Viewport with Waveform */}
                                      <div className="h-[60%] bg-gradient-to-b from-zinc-900 to-black relative overflow-hidden group-hover:bg-zinc-900/80 transition-colors">
                                          <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                                             {/* Animated Waveform */}
                                              <div className="flex items-end gap-1 h-16">
                                                  {[...Array(20)].map((_, i) => (
                                                      <div key={i} className="w-1.5 bg-indigo-500 animate-[pulse_1.5s_ease-in-out_infinite]" style={{ height: `${Math.random() * 100}%`, animationDelay: `${i * 0.05}s` }}></div>
@@ -524,10 +466,7 @@ const LandingPage: React.FC = () => {
                                              1080p • 60FPS
                                          </div>
                                      </div>
-
-                                     {/* Timeline Tracks */}
                                      <div className="absolute bottom-0 left-0 right-0 h-[35%] bg-[#0e0e10] border-t border-white/5 p-3 space-y-2">
-                                         {/* Playhead */}
                                          <div className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 shadow-[0_0_8px_red] left-[30%] animate-[slideRight_4s_linear_infinite]"></div>
                                          <style>{`
                                             @keyframes slideRight {
@@ -535,15 +474,12 @@ const LandingPage: React.FC = () => {
                                                 100% { left: 90%; }
                                             }
                                          `}</style>
-                                         
-                                         {/* Track 1 */}
                                          <div className="h-5 rounded bg-zinc-900 border border-white/5 relative overflow-hidden flex items-center px-1">
                                              <div className="h-3 w-[40%] bg-indigo-900/60 border border-indigo-500/30 rounded-sm relative overflow-hidden">
                                                  <div className="absolute inset-0 bg-indigo-500/10"></div>
                                              </div>
                                              <div className="h-3 w-[30%] ml-1 bg-purple-900/60 border border-purple-500/30 rounded-sm"></div>
                                          </div>
-                                         {/* Track 2 */}
                                          <div className="h-5 rounded bg-zinc-900 border border-white/5 relative overflow-hidden flex items-center px-1">
                                               <div className="h-3 w-[60%] ml-[20%] bg-emerald-900/60 border border-emerald-500/30 rounded-sm"></div>
                                          </div>
@@ -552,10 +488,8 @@ const LandingPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* 2. Brand Style Lock (Small Card) */}
                         <div className="md:col-span-1 md:row-span-1 rounded-[2rem] bg-[#08080a] border border-white/10 p-8 relative overflow-hidden group hover:border-purple-500/30 transition-all shadow-xl hover:shadow-[0_0_40px_rgba(168,85,247,0.1)] flex flex-col justify-between">
                             <div className="absolute top-0 right-0 w-48 h-48 bg-purple-600/5 blur-[60px] rounded-full pointer-events-none group-hover:bg-purple-600/10 transition-colors"></div>
-                            
                             <div>
                                 <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 border border-white/10 flex items-center justify-center text-white mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
                                     <SwatchIcon className="w-6 h-6 text-purple-400" />
@@ -565,8 +499,6 @@ const LandingPage: React.FC = () => {
                                     Define identity once. AI adheres strictly to your palette.
                                 </p>
                             </div>
-                            
-                            {/* UI SIMULATION: Locked Palette */}
                             <div className="mt-6 bg-zinc-900/60 rounded-xl border border-white/5 p-4 flex items-center justify-between relative overflow-hidden">
                                  <div className="flex -space-x-3">
                                      <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-[#08080a] shadow-lg z-30 group-hover:translate-x-1 transition-transform"></div>
@@ -580,10 +512,8 @@ const LandingPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* 3. Market Intelligence (Small Card) */}
                         <div className="md:col-span-1 md:row-span-1 rounded-[2rem] bg-[#08080a] border border-white/10 p-8 relative overflow-hidden group hover:border-emerald-500/30 transition-all shadow-xl hover:shadow-[0_0_40px_rgba(16,185,129,0.1)] flex flex-col justify-between">
                              <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-600/5 blur-[60px] rounded-full pointer-events-none group-hover:bg-emerald-600/10 transition-colors"></div>
-                            
                             <div>
                                 <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 border border-white/10 flex items-center justify-center text-white mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
                                     <SignalIcon className="w-6 h-6 text-emerald-400" />
@@ -593,23 +523,13 @@ const LandingPage: React.FC = () => {
                                     Real-time competitive analysis and strategic radar.
                                 </p>
                             </div>
-                            
-                            {/* UI SIMULATION: Radar Scan */}
                             <div className="mt-6 relative h-28 w-full bg-black/40 rounded-xl border border-white/5 overflow-hidden flex items-center justify-center">
-                                 {/* Grid */}
                                  <div className="absolute inset-0 bg-[linear-gradient(transparent_1px,#000_1px),linear-gradient(90deg,transparent_1px,#000_1px)] bg-[size:16px_16px] opacity-10"></div>
-                                 
-                                 {/* Radar Rings */}
                                  <div className="absolute w-24 h-24 border border-emerald-500/10 rounded-full"></div>
                                  <div className="absolute w-12 h-12 border border-emerald-500/20 rounded-full"></div>
-                                 
-                                 {/* Scanning Beam */}
                                  <div className="absolute w-32 h-32 bg-gradient-to-r from-transparent to-emerald-500/10 rounded-full [clip-path:polygon(50%_50%,100%_0,100%_100%)] animate-[spin_3s_linear_infinite] origin-center"></div>
-                                 
-                                 {/* Blips */}
                                  <div className="absolute top-8 left-12 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_5px_rgba(52,211,153,0.8)]"></div>
                                  <div className="absolute bottom-6 right-16 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse delay-300 shadow-[0_0_5px_rgba(52,211,153,0.8)]"></div>
-                                 
                                  <div className="absolute bottom-2 right-3 text-[8px] font-mono text-emerald-500/60 flex items-center gap-1">
                                      <span className="w-1 h-1 bg-emerald-500 rounded-full animate-ping"></span> LIVE
                                  </div>
@@ -619,7 +539,6 @@ const LandingPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Pricing */}
             <section id="pricing" className="py-32 px-6 bg-[#050505] border-t border-white/5 relative z-10">
                 <div className="max-w-7xl mx-auto">
                      <div className="text-center mb-20">
@@ -628,8 +547,6 @@ const LandingPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-8 items-start">
-                        
-                        {/* Plans Grid */}
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                             {PRICING_PLANS.map((plan, idx) => (
                                 <div 
@@ -675,7 +592,6 @@ const LandingPage: React.FC = () => {
                             ))}
                         </div>
 
-                        {/* Credit Cost Guide */}
                         <div className="lg:w-80 w-full p-6 rounded-2xl bg-zinc-900/50 border border-white/10 backdrop-blur-sm sticky top-24">
                             <div className="flex items-center gap-2 mb-6 text-emerald-400">
                                 <CurrencyDollarIcon className="w-6 h-6" />
@@ -693,7 +609,6 @@ const LandingPage: React.FC = () => {
                                 <strong>Note:</strong> Credits roll over for one month on Pro plans. Failed generations are automatically refunded.
                             </div>
                         </div>
-
                     </div>
                 </div>
             </section>
@@ -705,10 +620,10 @@ const LandingPage: React.FC = () => {
                         <span className="text-sm font-semibold text-zinc-400">Marketing AI Inc.</span>
                     </div>
                     <div className="flex gap-8 text-sm text-zinc-600">
-                        <span className="hover:text-zinc-400 cursor-pointer transition-colors">Privacy Policy</span>
-                        <span className="hover:text-zinc-400 cursor-pointer transition-colors">Terms of Service</span>
-                        <span className="hover:text-zinc-400 cursor-pointer transition-colors">Twitter</span>
-                        <span className="hover:text-zinc-400 cursor-pointer transition-colors">GitHub</span>
+                        <Link to="/terms-agreement" className="hover:text-zinc-400 cursor-pointer transition-colors">Privacy Policy</Link>
+                        <Link to="/terms-agreement" className="hover:text-zinc-400 cursor-pointer transition-colors">Terms of Service</Link>
+                        <a href="#" className="hover:text-zinc-400 cursor-pointer transition-colors" onClick={(e) => e.preventDefault()}>Twitter</a>
+                        <a href="#" className="hover:text-zinc-400 cursor-pointer transition-colors" onClick={(e) => e.preventDefault()}>GitHub</a>
                     </div>
                     <div className="text-xs text-zinc-700">
                         © 2025 All rights reserved.

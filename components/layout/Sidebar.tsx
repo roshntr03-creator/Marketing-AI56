@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useAppContext } from '../../contexts/AppContext';
 import { SIDEBAR_CATEGORIES } from '../../constants';
 import Logo from '../ui/Logo';
@@ -10,7 +10,6 @@ const Sidebar: React.FC = () => {
     const { isSidebarOpen, toggleSidebar } = useAppContext();
     
     const linkClasses = "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group border border-transparent";
-    // Active state mimics a pressed button or highlighted item in Linear/MacOS
     const activeLinkClasses = "bg-zinc-800 text-white border-white/5 shadow-inner";
     const inactiveLinkClasses = "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50";
 
@@ -20,7 +19,6 @@ const Sidebar: React.FC = () => {
             lg:relative
             ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64 lg:w-0 lg:border-none lg:translate-x-0'}
         `}>
-            {/* Fixed width inner container to prevent content squashing during width transition */}
             <div className="w-64 flex flex-col h-full whitespace-nowrap overflow-hidden">
                 <div className="h-16 flex items-center justify-between px-6 flex-shrink-0 border-b border-white/5">
                     <Logo href="/dashboard" textClassName="text-base text-white tracking-tight font-display font-bold" />
@@ -64,7 +62,7 @@ const Sidebar: React.FC = () => {
                 </nav>
                 
                 <div className="p-4 border-t border-white/5 bg-zinc-900/20">
-                    <div className="rounded-xl p-3 flex items-center gap-3 hover:bg-zinc-800/50 transition-colors cursor-pointer border border-transparent hover:border-white/5 group">
+                    <Link to="/settings" className="rounded-xl p-3 flex items-center gap-3 hover:bg-zinc-800/50 transition-colors cursor-pointer border border-transparent hover:border-white/5 group">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-2 ring-black">
                             M
                         </div>
@@ -72,7 +70,7 @@ const Sidebar: React.FC = () => {
                             <p className="text-xs font-medium text-white truncate group-hover:text-indigo-300 transition-colors">Marketing Lead</p>
                             <p className="text-[10px] text-zinc-500 truncate">Enterprise Plan</p>
                         </div>
-                    </div>
+                    </Link>
                 </div>
             </div>
         </aside>

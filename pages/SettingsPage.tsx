@@ -33,14 +33,6 @@ interface TeamMember {
     status: 'Active' | 'Pending';
 }
 
-interface Invoice {
-    id: string;
-    date: string;
-    amount: string;
-    status: 'Paid' | 'Pending';
-    plan: string;
-}
-
 // --- Sub-Components ---
 
 const TabButton: React.FC<{ 
@@ -73,7 +65,6 @@ const SettingsPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('account');
     
     // Local State for "Factual" representation
-    // We initialize team with just the current user to be accurate to the session state
     const [team, setTeam] = useState<TeamMember[]>([
         { 
             id: 'current-user', 
@@ -104,6 +95,15 @@ const SettingsPage: React.FC = () => {
         };
         setTeam([...team, newMember]);
         setInviteEmail('');
+    };
+
+    const handleDownloadInvoice = (id: string) => {
+        const blob = new Blob([`Invoice ${id}\nDate: ${new Date().toLocaleDateString()}\nAmount: $99.00\nStatus: Paid`], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-${id}.txt`;
+        a.click();
     };
 
     // --- Render Functions ---
@@ -282,14 +282,14 @@ const SettingsPage: React.FC = () => {
                                 <td className="px-6 py-4">Oct 1, 2024</td>
                                 <td className="px-6 py-4 text-white">$99.00</td>
                                 <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] border border-emerald-500/20 font-bold">Paid</span></td>
-                                <td className="px-6 py-4 text-right"><button className="hover:text-white"><ArrowDownTrayIcon className="w-4 h-4" /></button></td>
+                                <td className="px-6 py-4 text-right"><button onClick={() => handleDownloadInvoice('2024-001')} className="hover:text-white"><ArrowDownTrayIcon className="w-4 h-4" /></button></td>
                             </tr>
                              <tr className="hover:bg-white/5 transition-colors">
                                 <td className="px-6 py-4 font-mono text-zinc-300">INV-2024-002</td>
                                 <td className="px-6 py-4">Sep 1, 2024</td>
                                 <td className="px-6 py-4 text-white">$99.00</td>
                                 <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] border border-emerald-500/20 font-bold">Paid</span></td>
-                                <td className="px-6 py-4 text-right"><button className="hover:text-white"><ArrowDownTrayIcon className="w-4 h-4" /></button></td>
+                                <td className="px-6 py-4 text-right"><button onClick={() => handleDownloadInvoice('2024-002')} className="hover:text-white"><ArrowDownTrayIcon className="w-4 h-4" /></button></td>
                             </tr>
                         </tbody>
                     </table>
@@ -307,7 +307,6 @@ const SettingsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Invite Bar */}
             <Card className="p-4 bg-zinc-900/50 border-white/5">
                 <form onSubmit={handleInvite} className="flex gap-4 items-end">
                     <div className="flex-1">
@@ -331,7 +330,6 @@ const SettingsPage: React.FC = () => {
                 </form>
             </Card>
 
-            {/* Member List */}
             <Card className="p-0 bg-zinc-900/50 border-white/5 overflow-hidden">
                 <div className="divide-y divide-white/5">
                     {team.map(member => (
@@ -421,51 +419,18 @@ const SettingsPage: React.FC = () => {
 
     return (
         <div className="max-w-6xl mx-auto pb-20 h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-8 animate-fade-in">
-            
-            {/* Sidebar Navigation */}
             <div className="w-full lg:w-64 flex-shrink-0 space-y-2">
                 <h3 className="px-3 text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">Settings</h3>
-                <TabButton 
-                    active={activeTab === 'account'} 
-                    onClick={() => setActiveTab('account')} 
-                    icon={<UserCircleIcon className="w-5 h-5"/>} 
-                    label="General" 
-                    description="Profile & preferences"
-                />
-                <TabButton 
-                    active={activeTab === 'billing'} 
-                    onClick={() => setActiveTab('billing')} 
-                    icon={<CreditCardIcon className="w-5 h-5"/>} 
-                    label="Billing" 
-                    description="Plan & history"
-                />
-                <TabButton 
-                    active={activeTab === 'team'} 
-                    onClick={() => setActiveTab('team')} 
-                    icon={<UsersIcon className="w-5 h-5"/>} 
-                    label="Team" 
-                    description="Members & roles"
-                />
-                <TabButton 
-                    active={activeTab === 'notifications'} 
-                    onClick={() => setActiveTab('notifications')} 
-                    icon={<BellIcon className="w-5 h-5"/>} 
-                    label="Notifications" 
-                    description="Email settings"
-                />
-                
+                <TabButton active={activeTab === 'account'} onClick={() => setActiveTab('account')} icon={<UserCircleIcon className="w-5 h-5"/>} label="General" description="Profile & preferences" />
+                <TabButton active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} icon={<CreditCardIcon className="w-5 h-5"/>} label="Billing" description="Plan & history" />
+                <TabButton active={activeTab === 'team'} onClick={() => setActiveTab('team')} icon={<UsersIcon className="w-5 h-5"/>} label="Team" description="Members & roles" />
+                <TabButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon={<BellIcon className="w-5 h-5"/>} label="Notifications" description="Email settings" />
                 <div className="pt-8 px-3">
-                     <button 
-                        onClick={logout}
-                        className="flex items-center gap-3 text-sm font-medium text-zinc-500 hover:text-white transition-colors w-full p-2 rounded-lg hover:bg-white/5"
-                     >
-                         <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                         Sign Out
+                     <button onClick={logout} className="flex items-center gap-3 text-sm font-medium text-zinc-500 hover:text-white transition-colors w-full p-2 rounded-lg hover:bg-white/5">
+                         <ArrowRightOnRectangleIcon className="w-5 h-5" /> Sign Out
                      </button>
                 </div>
             </div>
-
-            {/* Content Area */}
             <div className="flex-1 rounded-2xl lg:overflow-y-auto custom-scrollbar relative">
                  <div className="relative z-10">
                     {activeTab === 'account' && renderAccountTab()}
