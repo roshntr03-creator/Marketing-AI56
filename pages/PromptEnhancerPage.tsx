@@ -7,20 +7,21 @@ import {
     SparklesIcon, 
     DocumentDuplicateIcon, 
     BeakerIcon, 
-    AdjustmentsHorizontalIcon,
-    CodeBracketIcon,
-    ArrowPathIcon,
-    CommandLineIcon,
-    BoltIcon,
-    LightBulbIcon,
-    CameraIcon,
-    SwatchIcon,
-    EyeIcon,
-    ArrowDownTrayIcon,
-    CubeIcon
+    AdjustmentsHorizontalIcon, 
+    CodeBracketIcon, 
+    ArrowPathIcon, 
+    CommandLineIcon, 
+    BoltIcon, 
+    LightBulbIcon, 
+    CameraIcon, 
+    SwatchIcon, 
+    EyeIcon, 
+    ArrowDownTrayIcon, 
+    CubeIcon 
 } from '@heroicons/react/24/outline';
 import { EnhancedPrompt } from '../types';
 import aiService from '../services/aiService';
+import { useAppContext } from '../contexts/AppContext';
 
 const QUICK_PRESETS = [
     "A futuristic city with neon lights",
@@ -34,6 +35,7 @@ const PromptEnhancerPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [enhancedPrompt, setEnhancedPrompt] = useState<EnhancedPrompt | null>(null);
     const [activeTab, setActiveTab] = useState<'visual' | 'json'>('visual');
+    const { showNotification } = useAppContext();
 
     const handleEnhance = async () => {
         if (!idea) return;
@@ -42,8 +44,10 @@ const PromptEnhancerPage: React.FC = () => {
         try {
             const result = await aiService.enhancePrompt(idea);
             setEnhancedPrompt(result);
+            showNotification("Prompt enhanced successfully!", "success");
         } catch (e) {
             console.error(e);
+            showNotification("Failed to enhance prompt.", "error");
         } finally {
             setIsLoading(false);
         }
@@ -55,7 +59,7 @@ const PromptEnhancerPage: React.FC = () => {
 
     const handleCopyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        alert('Copied to clipboard!'); 
+        showNotification('Copied to clipboard!', 'success');
     };
 
     const handleDownloadJson = () => {
@@ -66,6 +70,7 @@ const PromptEnhancerPage: React.FC = () => {
         a.href = url;
         a.download = `prompt_data_${Date.now()}.json`;
         a.click();
+        showNotification("Prompt JSON downloaded.", "info");
     };
 
     return (

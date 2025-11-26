@@ -21,6 +21,7 @@ import PromptEnhancerPage from './pages/PromptEnhancerPage';
 import CompetitorAnalysisPage from './pages/CompetitorAnalysisPage';
 import WorkflowBuilderPage from './pages/WorkflowBuilderPage';
 import TermsAgreementPage from './pages/TermsAgreementPage';
+import Toast from './components/ui/Toast';
 
 const AppRoutes: React.FC = () => {
     const { isAuthenticated, language, userProfile } = useAppContext();
@@ -88,12 +89,17 @@ const AppRoutes: React.FC = () => {
     );
 };
 
+const GlobalToast = () => {
+    const { notification, closeNotification } = useAppContext();
+    return <Toast toast={notification} onClose={closeNotification} />;
+};
 
 function App() {
   return (
     <AppProvider>
       <HashRouter>
         <AppRoutes />
+        <GlobalToast />
       </HashRouter>
     </AppProvider>
   );

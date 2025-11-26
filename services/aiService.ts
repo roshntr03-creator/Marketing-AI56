@@ -9,14 +9,18 @@ const createAI = (apiKey?: string) => new GoogleGenAI({ apiKey: apiKey || proces
 
 // Helper to check for Veo key selection
 export const ensureVeoKey = async (): Promise<void> => {
-    // @ts-ignore
-    if (window.aistudio && window.aistudio.hasSelectedApiKey) {
+    try {
         // @ts-ignore
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (!hasKey) {
+        if (typeof window !== 'undefined' && window.aistudio && window.aistudio.hasSelectedApiKey) {
             // @ts-ignore
-            await window.aistudio.openSelectKey();
+            const hasKey = await window.aistudio.hasSelectedApiKey();
+            if (!hasKey) {
+                // @ts-ignore
+                await window.aistudio.openSelectKey();
+            }
         }
+    } catch (e) {
+        console.warn("AI Studio key check failed or not available", e);
     }
 };
 

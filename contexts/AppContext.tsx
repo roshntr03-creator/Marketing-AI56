@@ -4,6 +4,7 @@ import { BrandProfile, CreationJob, UserProfile, ChecklistState } from '../types
 import { Language, TranslationKey, getTranslation } from '../utils/i18n';
 import * as storage from '../services/storageService';
 import aiService from '../services/aiService';
+import { ToastMessage, ToastType } from '../components/ui/Toast';
 
 // Define costs
 export const CREDIT_COSTS = {
@@ -32,6 +33,9 @@ interface AppContextType {
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
   setSidebarOpen: (isOpen: boolean) => void;
+  notification: ToastMessage | null;
+  showNotification: (message: string, type?: ToastType) => void;
+  closeNotification: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -45,8 +49,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [checklistState, setChecklistState] = useState<ChecklistState>(storage.getChecklistState());
   // Default to open on large screens (>= 1024px), closed on small screens
   const [isSidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
+  
+  const [notification, setNotification] = useState<ToastMessage | null>(null);
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
+
+  const showNotification = useCallback((message: string, type: ToastType = 'info') => {
+      setNotification({ id: Date.now().toString(), message, type });
+  }, []);
+
+  const closeNotification = useCallback(() => {
+      setNotification(null);
+  }, []);
 
   const login = (email: string, name?: string) => {
     const token = 'auth-token-' + Date.now();
@@ -74,6 +88,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setIsAuthenticated(true);
     setUserProfileState(profile);
+    showNotification(`Welcome back, ${profile.name}!`, 'success');
   };
 
   const acceptTerms = () => {
@@ -81,12 +96,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const updatedProfile = { ...userProfile, termsAccepted: true };
           setUserProfileState(updatedProfile);
           storage.saveUserProfile(updatedProfile);
+          showNotification("Terms accepted successfully.", 'success');
       }
   };
 
   const deductCredits = (amount: number): boolean => {
       if (!userProfile) return false;
-      if (userProfile.credits < amount) return false;
+      if (userProfile.credits < amount) {
+          showNotification(`Insufficient credits. Required: ${amount}, Available: ${userProfile.credits}`, 'error');
+          return false;
+      }
 
       const updatedProfile = { ...userProfile, credits: userProfile.credits - amount };
       setUserProfileState(updatedProfile);
@@ -98,11 +117,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     storage.clearAuthData();
     setIsAuthenticated(false);
     setUserProfileState(null);
+    showNotification("You have been logged out.", 'info');
   };
 
   const setBrandProfile = (profile: BrandProfile) => {
     storage.saveBrandProfile(profile);
     setBrandProfileState(profile);
+    showNotification("Brand profile updated.", 'success');
   };
   
   const setLanguage = (lang: Language) => {
@@ -135,6 +156,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         storage.saveCreations(updatedCreations);
         return updatedCreations;
     });
+    if (newJob.status === 'Pending') {
+        showNotification("Job started: " + newJob.title, 'info');
+    }
   };
 
   const updateJob = (id: string, updates: Partial<CreationJob>) => {
@@ -203,6 +227,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     length: params.length,
                     language: params.language
                 });
+            } else if (pendingJob.type === 'COMPETITOR_ANALYSIS') {
+                // Handled inside the page component directly due to complexity, 
+                // but if added here we would call service.
+                // For now this queue handles async tasks triggered via addCreation
             }
 
             // Store result blob/url persistently
@@ -224,10 +252,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
 
             updateJob(pendingJob.id, { status: 'Completed', resultUrl, resultText });
+            showNotification(`Job Completed: ${pendingJob.title}`, 'success');
 
         } catch (error) {
             console.error("Job failed", error);
             updateJob(pendingJob.id, { status: 'Failed', error: (error as Error).message });
+            showNotification(`Job Failed: ${pendingJob.title}`, 'error');
         }
     };
 
@@ -238,7 +268,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider value={{ 
         isAuthenticated, userProfile, brandProfile, language, creations, checklistState,
         login, logout, setBrandProfile, setLanguage, addCreation, updateChecklist, t,
-        acceptTerms, deductCredits, isSidebarOpen, toggleSidebar, setSidebarOpen
+        acceptTerms, deductCredits, isSidebarOpen, toggleSidebar, setSidebarOpen,
+        notification, showNotification, closeNotification
     }}>
       {children}
     </AppContext.Provider>

@@ -54,7 +54,7 @@ const ASPECT_RATIOS = [
 ];
 
 const ImageGeneratorPage: React.FC = () => {
-    const { addCreation, creations, deductCredits, userProfile } = useAppContext();
+    const { addCreation, creations, deductCredits, userProfile, showNotification } = useAppContext();
     
     // Local State
     const [prompt, setPrompt] = useState('');
@@ -130,8 +130,10 @@ const ImageGeneratorPage: React.FC = () => {
                 setNegativePrompt(result.negativePrompt);
                 setShowAdvanced(true); // Auto-show negative prompt field
             }
+            showNotification("Prompt enhanced successfully!", "success");
         } catch (error) {
             console.error("Prompt enhancement failed", error);
+            showNotification("Failed to enhance prompt.", "error");
         } finally {
             setIsEnhancing(false);
         }
@@ -141,7 +143,7 @@ const ImageGeneratorPage: React.FC = () => {
         if (!prompt) return;
 
         if (!deductCredits(totalCost)) {
-            alert(`Insufficient credits. You need ${totalCost} credits but have ${userProfile?.credits || 0}.`);
+            // deductCredits shows its own notification
             return;
         }
 

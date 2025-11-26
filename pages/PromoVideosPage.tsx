@@ -68,7 +68,7 @@ interface TextOverlay {
 const STORAGE_KEY = 'promo_video_page_state';
 
 const PromoVideosPage: React.FC = () => {
-    const { addCreation, creations, deductCredits, userProfile } = useAppContext();
+    const { addCreation, creations, deductCredits, userProfile, showNotification } = useAppContext();
     
     // --- Generator State ---
     const [activeTab, setActiveTab] = useState<Tab>('Vision');
@@ -227,8 +227,10 @@ const PromoVideosPage: React.FC = () => {
             const result = await aiService.enhancePrompt(prompt);
             if (result.finalPrompt) setPrompt(result.finalPrompt);
             if (result.negativePrompt) setNegativePrompt(result.negativePrompt);
+            showNotification("Prompt optimized!", "success");
         } catch (error) {
             console.error("Prompt enhancement failed", error);
+            showNotification("Optimization failed.", "error");
         } finally {
             setIsEnhancing(false);
         }
@@ -236,7 +238,7 @@ const PromoVideosPage: React.FC = () => {
 
     const createJob = () => {
         if (!deductCredits(cost)) {
-            alert(`Insufficient credits. Cost: ${cost}, Balance: ${userProfile?.credits || 0}`);
+            // deductCredits handles notification
             return;
         }
 
@@ -284,7 +286,7 @@ const PromoVideosPage: React.FC = () => {
         try {
             // Simulate rendering delay
             await aiService.exportVideoWithEdits(generatedVideoUrl, { overlays, activeFilter });
-            alert("Video Rendered Successfully! (Simulated)");
+            showNotification("Video Rendered Successfully! (Simulated)", "success");
         } finally {
             setIsRenderingEdit(false);
         }

@@ -288,7 +288,11 @@ const LandingPage: React.FC = () => {
         if(e) e.preventDefault();
         setIsTransitioning(true);
         setTimeout(() => {
-            navigate('/signup');
+            if (email) {
+                navigate(`/signup?email=${encodeURIComponent(email)}`);
+            } else {
+                navigate('/signup');
+            }
         }, 2500);
     };
 

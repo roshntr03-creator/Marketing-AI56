@@ -61,7 +61,7 @@ const TabButton: React.FC<{
 );
 
 const SettingsPage: React.FC = () => {
-    const { userProfile, logout, setLanguage, language } = useAppContext();
+    const { userProfile, logout, setLanguage, language, showNotification } = useAppContext();
     const [activeTab, setActiveTab] = useState<SettingsTab>('account');
     
     // Local State for "Factual" representation
@@ -95,6 +95,7 @@ const SettingsPage: React.FC = () => {
         };
         setTeam([...team, newMember]);
         setInviteEmail('');
+        showNotification("Invite sent successfully.", "success");
     };
 
     const handleDownloadInvoice = (id: string) => {
@@ -104,6 +105,7 @@ const SettingsPage: React.FC = () => {
         a.href = url;
         a.download = `invoice-${id}.txt`;
         a.click();
+        showNotification("Invoice download started.", "info");
     };
 
     // --- Render Functions ---

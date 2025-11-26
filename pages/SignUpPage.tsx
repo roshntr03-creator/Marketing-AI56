@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
 import { Input } from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -15,6 +15,14 @@ const SignUpPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAppContext();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+      const emailParam = searchParams.get('email');
+      if (emailParam) {
+          setEmail(emailParam);
+      }
+  }, [searchParams]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

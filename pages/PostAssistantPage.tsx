@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -5,6 +6,7 @@ import { Textarea } from '../components/ui/Input';
 import { SparklesIcon, DocumentDuplicateIcon, ChatBubbleOvalLeftEllipsisIcon, HandThumbUpIcon, ShareIcon, HashtagIcon } from '@heroicons/react/24/outline';
 import aiService from '../services/aiService';
 import { SocialPost } from '../types';
+import { useAppContext } from '../contexts/AppContext';
 
 const PLATFORMS = ['Twitter', 'Instagram', 'LinkedIn', 'Facebook'];
 
@@ -13,6 +15,7 @@ const PostAssistantPage: React.FC = () => {
     const [platform, setPlatform] = useState(PLATFORMS[0]);
     const [isLoading, setIsLoading] = useState(false);
     const [posts, setPosts] = useState<SocialPost[]>([]);
+    const { showNotification } = useAppContext();
 
     const handleGenerate = async () => {
         if (!topic) return;
@@ -21,8 +24,10 @@ const PostAssistantPage: React.FC = () => {
         try {
             const result = await aiService.generateSocialPosts(topic, platform);
             setPosts(result);
+            showNotification("Posts drafted successfully!", "success");
         } catch (e) {
             console.error(e);
+            showNotification("Failed to generate posts.", "error");
         } finally {
             setIsLoading(false);
         }
@@ -30,7 +35,7 @@ const PostAssistantPage: React.FC = () => {
 
     const handleCopyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        alert('Post copied!');
+        showNotification('Post copied to clipboard!', 'success');
     };
 
     return (
