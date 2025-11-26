@@ -5,6 +5,14 @@ import { Language, TranslationKey, getTranslation } from '../utils/i18n';
 import * as storage from '../services/storageService';
 import aiService from '../services/aiService';
 
+// Define costs
+export const CREDIT_COSTS = {
+    IMAGE: 8,
+    VIDEO_10S: 60,
+    VIDEO_15S: 65,
+    VIDEO_6S: 40, // Grok default
+};
+
 interface AppContextType {
   isAuthenticated: boolean;
   userProfile: UserProfile | null;
@@ -15,6 +23,7 @@ interface AppContextType {
   login: (email: string, name?: string) => void;
   logout: () => void;
   acceptTerms: () => void;
+  deductCredits: (amount: number) => boolean;
   setBrandProfile: (profile: BrandProfile) => void;
   setLanguage: (lang: Language) => void;
   addCreation: (job: Omit<CreationJob, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
@@ -51,15 +60,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         displayName = userProfile.name;
     }
 
-    // If name provided, it's likely a signup -> require terms
-    // If no name provided (login), assume returning user -> terms accepted (simplified logic)
-    // In a real app, the backend tells us if terms are accepted.
     const isSignup = !!name;
 
+    // Initial credits: 1000
     const profile: UserProfile = {
         name: displayName || 'Creator',
         email,
         plan: 'Pro',
+        credits: 1000, 
         termsAccepted: isSignup ? false : true
     };
     storage.saveUserProfile(profile);
@@ -74,6 +82,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setUserProfileState(updatedProfile);
           storage.saveUserProfile(updatedProfile);
       }
+  };
+
+  const deductCredits = (amount: number): boolean => {
+      if (!userProfile) return false;
+      if (userProfile.credits < amount) return false;
+
+      const updatedProfile = { ...userProfile, credits: userProfile.credits - amount };
+      setUserProfileState(updatedProfile);
+      storage.saveUserProfile(updatedProfile);
+      return true;
   };
 
   const logout = () => {
@@ -220,7 +238,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider value={{ 
         isAuthenticated, userProfile, brandProfile, language, creations, checklistState,
         login, logout, setBrandProfile, setLanguage, addCreation, updateChecklist, t,
-        acceptTerms, isSidebarOpen, toggleSidebar, setSidebarOpen
+        acceptTerms, deductCredits, isSidebarOpen, toggleSidebar, setSidebarOpen
     }}>
       {children}
     </AppContext.Provider>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -20,8 +21,10 @@ import {
     LockClosedIcon,
     AdjustmentsHorizontalIcon,
     FingerPrintIcon,
-    SignalIcon
+    SignalIcon,
+    CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
+import { PRICING_PLANS, CREDIT_COSTS_DISPLAY } from '../constants';
 
 // --- Constants ---
 const BRANDS = [
@@ -620,57 +623,77 @@ const LandingPage: React.FC = () => {
             <section id="pricing" className="py-32 px-6 bg-[#050505] border-t border-white/5 relative z-10">
                 <div className="max-w-7xl mx-auto">
                      <div className="text-center mb-20">
-                        <h2 className="font-display text-4xl md:text-5xl font-semibold tracking-tighter text-white mb-6">Transparent Pricing.</h2>
-                        <p className="text-zinc-400 text-lg max-w-2xl mx-auto">Start small and scale. Access enterprise-grade tools without the enterprise-grade complexity.</p>
+                        <h2 className="font-display text-4xl md:text-5xl font-semibold tracking-tighter text-white mb-6">Flexible Credit Plans.</h2>
+                        <p className="text-zinc-400 text-lg max-w-2xl mx-auto">Start with a monthly credit allowance. Scale up as your production needs grow.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[
-                            { name: 'Starter', price: '$29', desc: 'Perfect for solo creators.', features: ['10 Sora Video Gens', '50 HD Images', 'Basic Templates'] },
-                            { name: 'Pro', price: '$99', desc: 'For growing brands.', popular: true, features: ['50 Sora Video Gens', 'Unlimited Images', 'Brand Style Lock', 'Priority Processing'] },
-                            { name: 'Enterprise', price: 'Custom', desc: 'For large organizations.', features: ['Unlimited Generation', 'API Access', 'Custom Models', 'Dedicated Support'] }
-                        ].map((plan, idx) => (
-                            <div 
-                                key={idx} 
-                                className={`p-8 rounded-2xl border flex flex-col transition-all duration-300 relative ${
-                                    plan.popular 
-                                    ? 'bg-[#09090b] border-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.1)] scale-105 z-10' 
-                                    : 'bg-transparent border-white/5 hover:border-white/10 hover:bg-white/5'
-                                }`}
-                            >
-                                {plan.popular && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg border border-indigo-500/50">
-                                        Most Popular
-                                    </div>
-                                )}
-                                <div className="mb-8">
-                                    <h3 className="text-lg font-medium text-white mb-2">{plan.name}</h3>
-                                    <div className="flex items-baseline gap-1 mb-2">
-                                        <span className="text-4xl font-semibold text-white tracking-tight font-display">{plan.price}</span>
-                                        {plan.price !== 'Custom' && <span className="text-zinc-500 text-sm">/mo</span>}
-                                    </div>
-                                    <p className="text-sm text-zinc-400">{plan.desc}</p>
-                                </div>
-                                
-                                <div className="space-y-4 mb-10 flex-1">
-                                    {plan.features.map((feature, i) => (
-                                        <div key={i} className="flex items-start gap-3">
-                                            <CheckCircleIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-                                            <span className="text-sm text-zinc-300">{feature}</span>
+                    <div className="flex flex-col lg:flex-row gap-8 items-start">
+                        
+                        {/* Plans Grid */}
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                            {PRICING_PLANS.map((plan, idx) => (
+                                <div 
+                                    key={idx} 
+                                    className={`p-8 rounded-2xl border flex flex-col transition-all duration-300 relative ${
+                                        plan.isPopular 
+                                        ? 'bg-[#09090b] border-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.1)] scale-105 z-10' 
+                                        : 'bg-transparent border-white/5 hover:border-white/10 hover:bg-white/5'
+                                    }`}
+                                >
+                                    {plan.isPopular && (
+                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg border border-indigo-500/50">
+                                            Most Popular
                                         </div>
-                                    ))}
-                                </div>
+                                    )}
+                                    <div className="mb-8">
+                                        <h3 className="text-lg font-medium text-white mb-2">{plan.name}</h3>
+                                        <div className="flex items-baseline gap-1 mb-2">
+                                            <span className="text-4xl font-semibold text-white tracking-tight font-display">{plan.price}</span>
+                                            {plan.price !== 'Contact' && <span className="text-zinc-500 text-sm">/mo</span>}
+                                        </div>
+                                        <p className="text-sm text-zinc-400">{plan.description}</p>
+                                    </div>
+                                    
+                                    <div className="space-y-4 mb-10 flex-1">
+                                        {plan.features.map((feature, i) => (
+                                            <div key={i} className="flex items-start gap-3">
+                                                <CheckCircleIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                                                <span className="text-sm text-zinc-300">{feature}</span>
+                                            </div>
+                                        ))}
+                                    </div>
 
-                                <Link to="/signup" className="w-full">
-                                    <Button 
-                                        variant={plan.popular ? 'primary' : 'outline'} 
-                                        className="w-full justify-center h-12"
-                                    >
-                                        Get {plan.name}
-                                    </Button>
-                                </Link>
+                                    <Link to="/signup" className="w-full">
+                                        <Button 
+                                            variant={plan.isPopular ? 'primary' : 'outline'} 
+                                            className="w-full justify-center h-12"
+                                        >
+                                            Get {plan.name}
+                                        </Button>
+                                    </Link>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Credit Cost Guide */}
+                        <div className="lg:w-80 w-full p-6 rounded-2xl bg-zinc-900/50 border border-white/10 backdrop-blur-sm sticky top-24">
+                            <div className="flex items-center gap-2 mb-6 text-emerald-400">
+                                <CurrencyDollarIcon className="w-6 h-6" />
+                                <h3 className="text-sm font-bold uppercase tracking-wider">Credit Cost Guide</h3>
                             </div>
-                        ))}
+                            <div className="space-y-4">
+                                {CREDIT_COSTS_DISPLAY.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center pb-3 border-b border-white/5 last:border-0 last:pb-0">
+                                        <span className="text-sm text-zinc-300">{item.item}</span>
+                                        <span className="text-xs font-bold text-white bg-white/10 px-2 py-1 rounded">{item.cost} Credits</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-6 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20 text-xs text-indigo-300 leading-relaxed">
+                                <strong>Note:</strong> Credits roll over for one month on Pro plans. Failed generations are automatically refunded.
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </section>

@@ -25,7 +25,7 @@ import {
     PlusIcon,
     ScissorsIcon
 } from '@heroicons/react/24/outline';
-import { useAppContext } from '../contexts/AppContext';
+import { useAppContext, CREDIT_COSTS } from '../contexts/AppContext';
 import aiService from '../services/aiService';
 
 const VIDEO_MODELS = [
@@ -68,7 +68,7 @@ interface TextOverlay {
 const STORAGE_KEY = 'promo_video_page_state';
 
 const PromoVideosPage: React.FC = () => {
-    const { addCreation, creations } = useAppContext();
+    const { addCreation, creations, deductCredits, userProfile } = useAppContext();
     
     // --- Generator State ---
     const [activeTab, setActiveTab] = useState<Tab>('Vision');
@@ -106,6 +106,14 @@ const PromoVideosPage: React.FC = () => {
     const currentJob = creations.find(c => c.id === currentJobId);
     const isGenerating = currentJob?.status === 'Generating' || currentJob?.status === 'Pending';
     const generatedVideoUrl = currentJob?.status === 'Completed' ? currentJob.resultUrl : null;
+
+    // Calculate Cost
+    const getCost = () => {
+        if (selectedModel === 'grok-imagine/text-to-video') return CREDIT_COSTS.VIDEO_6S;
+        return duration === '15s' ? CREDIT_COSTS.VIDEO_15S : CREDIT_COSTS.VIDEO_10S;
+    };
+    const cost = getCost();
+    const hasSufficientCredits = (userProfile?.credits || 0) >= cost;
 
     // --- 1. Persistence Logic (Load on Mount) ---
     useEffect(() => {
@@ -227,6 +235,11 @@ const PromoVideosPage: React.FC = () => {
     };
 
     const createJob = () => {
+        if (!deductCredits(cost)) {
+            alert(`Insufficient credits. Cost: ${cost}, Balance: ${userProfile?.credits || 0}`);
+            return;
+        }
+
         const jobId = `promo-${Date.now()}`;
         const camera = { zoom: cameraZoom, pan: cameraPan, tilt: cameraTilt };
 
@@ -299,6 +312,7 @@ const PromoVideosPage: React.FC = () => {
                         <h1 className="text-xl font-bold font-display text-white">Promo Studio</h1>
                         <p className="text-zinc-400 text-xs">AI Video Generator & Editor</p>
                     </div>
+                    <div className="text-xs font-medium text-zinc-300">{userProfile?.credits || 0} Credits</div>
                 </div>
 
                 {/* Generator Tabs */}
@@ -497,13 +511,16 @@ const PromoVideosPage: React.FC = () => {
                     <Button 
                         onClick={createJob} 
                         isLoading={isGenerating} 
-                        disabled={!prompt && activeTab === 'Vision'}
+                        disabled={!prompt && activeTab === 'Vision' || !hasSufficientCredits}
                         size="lg" 
-                        className="w-full shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 py-4 text-base"
+                        className={`w-full transition-all duration-300 py-4 text-base ${hasSufficientCredits ? 'shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]' : 'opacity-70 cursor-not-allowed'}`}
                     >
                         <FilmIcon className="w-5 h-5 mr-2" />
-                        {isGenerating ? 'Generating...' : 'Generate Video'}
+                        {isGenerating ? 'Generating...' : `Generate Video (${cost} Credits)`}
                     </Button>
+                    {!hasSufficientCredits && (
+                        <p className="text-[10px] text-red-400 text-center mt-2">Insufficient Credits</p>
+                    )}
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useAppContext } from '../contexts/AppContext';
+import { useAppContext, CREDIT_COSTS } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { Textarea, Input } from '../components/ui/Input';
@@ -54,7 +54,7 @@ const ASPECT_RATIOS = [
 ];
 
 const ImageGeneratorPage: React.FC = () => {
-    const { addCreation, creations } = useAppContext();
+    const { addCreation, creations, deductCredits, userProfile } = useAppContext();
     
     // Local State
     const [prompt, setPrompt] = useState('');
@@ -80,6 +80,10 @@ const ImageGeneratorPage: React.FC = () => {
     const currentJob = creations.find(c => c.id === currentJobId);
     const isGenerating = currentJob?.status === 'Generating' || currentJob?.status === 'Pending';
     const displayedImage = currentJob?.status === 'Completed' ? currentJob.resultUrl : (currentJobId ? null : recentImages[0]?.resultUrl);
+
+    // Credit Logic
+    const totalCost = CREDIT_COSTS.IMAGE * numImages;
+    const hasSufficientCredits = (userProfile?.credits || 0) >= totalCost;
 
     // Reset count when model changes if not Grok 3
     useEffect(() => {
@@ -136,6 +140,11 @@ const ImageGeneratorPage: React.FC = () => {
     const handleGenerate = async () => {
         if (!prompt) return;
 
+        if (!deductCredits(totalCost)) {
+            alert(`Insufficient credits. You need ${totalCost} credits but have ${userProfile?.credits || 0}.`);
+            return;
+        }
+
         const jobId = `img-${Date.now()}`;
         
         // Construct full prompt with style
@@ -178,9 +187,9 @@ const ImageGeneratorPage: React.FC = () => {
                         <h1 className="text-xl font-bold font-display text-white">Image Studio</h1>
                         <p className="text-zinc-400 text-xs">Advanced Generation Engine</p>
                     </div>
-                    <div className="flex gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="text-[10px] font-mono text-emerald-500 uppercase tracking-wider">Online</span>
+                    <div className="flex gap-2 items-center">
+                        <CpuChipIcon className="w-4 h-4 text-emerald-500" />
+                        <span className="text-xs font-medium text-zinc-300">{userProfile?.credits || 0} Credits</span>
                     </div>
                 </div>
 
@@ -359,13 +368,16 @@ const ImageGeneratorPage: React.FC = () => {
                     <Button 
                         onClick={handleGenerate} 
                         isLoading={isGenerating} 
-                        disabled={!prompt}
+                        disabled={!prompt || !hasSufficientCredits}
                         size="lg"
-                        className="w-full py-4 text-base shadow-[0_0_25px_rgba(99,102,241,0.4)] hover:shadow-[0_0_35px_rgba(99,102,241,0.6)] transition-all duration-300 hover:-translate-y-0.5"
+                        className={`w-full py-4 text-base transition-all duration-300 ${hasSufficientCredits ? 'shadow-[0_0_25px_rgba(99,102,241,0.4)] hover:shadow-[0_0_35px_rgba(99,102,241,0.6)] hover:-translate-y-0.5' : 'opacity-70 cursor-not-allowed'}`}
                     >
                         <PaintBrushIcon className="w-5 h-5 mr-2" />
-                        Generate {numImages > 1 ? `(${numImages})` : ''} Artwork
+                        Generate {numImages > 1 ? `(${numImages})` : ''} ({totalCost} Credits)
                     </Button>
+                    {!hasSufficientCredits && (
+                        <p className="text-[10px] text-red-400 text-center mt-2">Insufficient Credits ({userProfile?.credits})</p>
+                    )}
                 </div>
             </div>
 

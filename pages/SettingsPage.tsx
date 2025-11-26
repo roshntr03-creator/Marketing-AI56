@@ -5,7 +5,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import Toggle from '../components/ui/Toggle';
-import { PRICING_PLANS } from '../constants';
+import { PRICING_PLANS, CREDIT_COSTS_DISPLAY } from '../constants';
 import { 
     UserCircleIcon, 
     CreditCardIcon, 
@@ -17,7 +17,8 @@ import {
     ExclamationTriangleIcon, 
     PlusIcon, 
     ArrowDownTrayIcon,
-    EnvelopeIcon
+    EnvelopeIcon,
+    CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
 // --- Types ---
@@ -167,45 +168,57 @@ const SettingsPage: React.FC = () => {
 
     const renderBillingTab = () => (
         <div className="space-y-8 animate-fade-in">
-            {/* Current Plan Status */}
-            <Card className="p-8 bg-gradient-to-r from-indigo-900/20 to-zinc-900 border-white/10 relative overflow-hidden">
-                <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-6">
-                        <div>
-                            <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-2">Current Subscription</h3>
-                            <div className="flex items-baseline gap-2">
-                                <h2 className="text-4xl font-display font-bold text-white">{userProfile?.plan || 'Starter'}</h2>
-                                <span className="text-zinc-400">/ month</span>
-                            </div>
-                        </div>
-                        <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-500/20 flex items-center gap-2">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            Active
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-white/10 pt-6">
-                        <div>
-                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Next Billing Date</p>
-                            <p className="text-white font-medium">November 1, 2024</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Payment Method</p>
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-5 bg-white rounded flex items-center justify-center px-1">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full opacity-80 -mr-0.5"></div>
-                                    <div className="w-2 h-2 bg-orange-500 rounded-full opacity-80"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Current Plan Status */}
+                <Card className="lg:col-span-2 p-8 bg-gradient-to-r from-indigo-900/20 to-zinc-900 border-white/10 relative overflow-hidden">
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-2">Current Subscription</h3>
+                                <div className="flex items-baseline gap-2">
+                                    <h2 className="text-4xl font-display font-bold text-white">{userProfile?.plan || 'Starter'}</h2>
+                                    <span className="text-zinc-400">/ month</span>
                                 </div>
-                                <p className="text-white font-medium">•••• 4242</p>
+                            </div>
+                            <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-500/20 flex items-center gap-2">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                Active
                             </div>
                         </div>
-                        <div>
-                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total Spent</p>
-                            <p className="text-white font-medium">$298.00</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-white/10 pt-6">
+                            <div>
+                                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Credits Balance</p>
+                                <p className="text-white font-medium text-xl">{userProfile?.credits || 0}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Next Billing Date</p>
+                                <p className="text-white font-medium">November 1, 2024</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total Spent</p>
+                                <p className="text-white font-medium">$298.00</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </Card>
+                </Card>
+
+                {/* Cost Reference Card */}
+                <Card className="p-6 bg-zinc-900/50 border-white/5 h-fit">
+                    <div className="flex items-center gap-2 mb-4 text-emerald-400">
+                        <CurrencyDollarIcon className="w-5 h-5" />
+                        <h3 className="text-sm font-bold uppercase tracking-wider">Credit Cost Reference</h3>
+                    </div>
+                    <div className="space-y-3">
+                        {CREDIT_COSTS_DISPLAY.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center pb-2 border-b border-white/5 last:border-0 last:pb-0">
+                                <span className="text-sm text-zinc-300">{item.item}</span>
+                                <span className="text-xs font-bold text-white bg-white/10 px-2 py-1 rounded">{item.cost} Cr</span>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
 
             {/* Plan Options */}
             <div>
@@ -247,7 +260,7 @@ const SettingsPage: React.FC = () => {
                 </div>
             </div>
 
-             {/* Invoice History (Static for Demo but realistic structure) */}
+             {/* Invoice History */}
              <Card className="p-0 bg-zinc-900/50 border-white/5 overflow-hidden">
                 <div className="p-6 border-b border-white/5">
                     <h3 className="font-bold text-white">Billing History</h3>

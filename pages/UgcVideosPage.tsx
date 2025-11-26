@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
@@ -16,7 +17,7 @@ import {
     FaceSmileIcon,
     UserIcon
 } from '@heroicons/react/24/outline';
-import { useAppContext } from '../contexts/AppContext';
+import { useAppContext, CREDIT_COSTS } from '../contexts/AppContext';
 import aiService from '../services/aiService';
 import * as storage from '../services/storageService';
 
@@ -37,7 +38,7 @@ const STORAGE_KEY = 'ugc_page_state';
 type Tab = 'Blueprint' | 'Casting' | 'Production';
 
 const UgcVideosPage: React.FC = () => {
-    const { addCreation, brandProfile, creations } = useAppContext();
+    const { addCreation, brandProfile, creations, deductCredits, userProfile } = useAppContext();
 
     // --- State ---
     const [activeTab, setActiveTab] = useState<Tab>('Blueprint');
@@ -67,6 +68,10 @@ const UgcVideosPage: React.FC = () => {
     const currentJob = creations.find(c => c.id === currentJobId);
     const isGeneratingVideo = currentJob?.status === 'Generating' || currentJob?.status === 'Pending';
     const generatedVideoUrl = currentJob?.status === 'Completed' ? currentJob.resultUrl : null;
+
+    // Credit Cost Calculation
+    const cost = videoLength === '15s' ? CREDIT_COSTS.VIDEO_15S : CREDIT_COSTS.VIDEO_10S;
+    const hasSufficientCredits = (userProfile?.credits || 0) >= cost;
 
     // --- Persistence ---
     useEffect(() => {
@@ -134,6 +139,11 @@ const UgcVideosPage: React.FC = () => {
     const startProduction = () => {
         if (!scriptHook || !imageFile) return;
 
+        if (!deductCredits(cost)) {
+            alert(`Insufficient credits. Cost: ${cost}, Balance: ${userProfile?.credits || 0}`);
+            return;
+        }
+
         const reader = new FileReader();
         reader.onloadend = async () => {
             const base64Data = (reader.result as string).split(',')[1];
@@ -169,9 +179,12 @@ const UgcVideosPage: React.FC = () => {
             
             {/* LEFT PANEL: STUDIO CONTROLS */}
             <div className="w-full lg:w-5/12 flex flex-col h-full bg-[#09090b] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-                <div className="px-6 py-5 border-b border-white/5 bg-zinc-900/50 backdrop-blur-sm">
-                    <h1 className="text-xl font-bold font-display text-white">UGC Studio</h1>
-                    <p className="text-zinc-400 text-xs">Professional Viral Video Creator</p>
+                <div className="px-6 py-5 border-b border-white/5 bg-zinc-900/50 backdrop-blur-sm flex justify-between items-center">
+                    <div>
+                        <h1 className="text-xl font-bold font-display text-white">UGC Studio</h1>
+                        <p className="text-zinc-400 text-xs">Professional Viral Video Creator</p>
+                    </div>
+                    <div className="text-xs font-medium text-zinc-300">{userProfile?.credits || 0} Credits</div>
                 </div>
 
                 {/* Progress Stepper */}
@@ -353,14 +366,14 @@ const UgcVideosPage: React.FC = () => {
                             return 'Production';
                         })} 
                         isLoading={isGeneratingVideo} 
-                        disabled={!imageFile || (activeTab === 'Production' && !scriptHook)}
+                        disabled={!imageFile || (activeTab === 'Production' && (!scriptHook || !hasSufficientCredits))}
                         size="lg" 
-                        className="w-full shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 py-4 text-base"
+                        className={`w-full transition-all duration-300 py-4 text-base ${activeTab === 'Production' && !hasSufficientCredits ? 'opacity-70 cursor-not-allowed' : 'shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]'}`}
                     >
                         {activeTab === 'Production' ? (
                             <>
                                 <FilmIcon className="w-5 h-5 mr-2" />
-                                Start Production
+                                Start Production ({cost} Credits)
                             </>
                         ) : (
                             <>
@@ -368,6 +381,9 @@ const UgcVideosPage: React.FC = () => {
                             </>
                         )}
                     </Button>
+                    {activeTab === 'Production' && !hasSufficientCredits && (
+                        <p className="text-[10px] text-red-400 text-center mt-2">Insufficient Credits</p>
+                    )}
                 </div>
             </div>
 

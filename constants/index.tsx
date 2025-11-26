@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
     HomeIcon, 
@@ -131,12 +132,14 @@ export const PRICING_PLANS = [
     name: 'Starter',
     price: '$29',
     frequency: '/ month',
-    description: 'For individuals and small teams just getting started.',
+    credits: 1000,
+    description: 'Essential credits for solo creators.',
     features: [
-      '10 Video Generations',
-      '50 Image Generations',
-      'Basic Content Tools',
-      'Email Support'
+      '1,000 Monthly Credits',
+      'Approx. 16 Videos (10s)',
+      'Or ~125 Images',
+      'Access to all AI Models',
+      'Standard Support'
     ],
     isPopular: false,
   },
@@ -144,28 +147,37 @@ export const PRICING_PLANS = [
     name: 'Pro',
     price: '$99',
     frequency: '/ month',
-    description: 'For growing businesses that need more power and scale.',
+    credits: 5000,
+    description: 'Powerhouse for growing brands.',
     features: [
-      '50 Video Generations',
-      'Unlimited Image Generations',
-      'Advanced Content Tools',
-      'Brand Identity Analysis',
-      'Priority Support'
+      '5,000 Monthly Credits',
+      'Approx. 80 Videos (10s)',
+      'Or ~625 Images',
+      'Priority Processing',
+      'Brand Style Lock'
     ],
     isPopular: true,
   },
   {
     name: 'Enterprise',
-    price: 'Contact Us',
+    price: 'Contact',
     frequency: '',
-    description: 'For large organizations with custom needs.',
+    credits: 'Unlimited',
+    description: 'Custom scale and support.',
     features: [
-      'Unlimited Generations',
-      'Team Collaboration Tools',
-      'Dedicated Account Manager',
-      'API Access & Integrations',
-      'Custom Solutions'
+      'Custom Credit Volume',
+      'API Access',
+      'Dedicated Manager',
+      'Custom Model Training'
     ],
     isPopular: false,
   }
+];
+
+export const CREDIT_COSTS_DISPLAY = [
+    { item: 'Sora Video (15s)', cost: 65 },
+    { item: 'Sora Video (10s)', cost: 60 },
+    { item: 'Grok Video (6s)', cost: 40 },
+    { item: 'High-Res Image', cost: 8 },
+    { item: 'Content Gen', cost: 0 },
 ];

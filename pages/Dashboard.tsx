@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
@@ -49,16 +50,16 @@ const QuickActionCard: React.FC<{
     </Link>
 );
 
-const StatCard: React.FC<{ label: string, value: string | number, trend?: string, icon: React.ElementType }> = ({ label, value, trend, icon: Icon }) => (
-    <div className="bg-zinc-900/50 border border-white/5 rounded-xl p-4 flex items-center justify-between">
+const StatCard: React.FC<{ label: string, value: string | number, trend?: string, icon: React.ElementType, highlight?: boolean }> = ({ label, value, trend, icon: Icon, highlight }) => (
+    <div className={`bg-zinc-900/50 border rounded-xl p-4 flex items-center justify-between ${highlight ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-white/5'}`}>
         <div>
             <p className="text-zinc-500 text-xs uppercase tracking-wider font-semibold mb-1">{label}</p>
             <div className="flex items-baseline gap-2">
-                <h4 className="text-2xl font-display font-bold text-white">{value}</h4>
+                <h4 className={`text-2xl font-display font-bold ${highlight ? 'text-indigo-400' : 'text-white'}`}>{value}</h4>
                 {trend && <span className="text-xs text-emerald-400 font-medium">{trend}</span>}
             </div>
         </div>
-        <div className="p-3 bg-white/5 rounded-lg text-zinc-400">
+        <div className={`p-3 rounded-lg ${highlight ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-zinc-400'}`}>
             <Icon className="w-5 h-5" />
         </div>
     </div>
@@ -78,6 +79,7 @@ const Dashboard: React.FC = () => {
     // Calculate Stats
     const videoCount = creations.filter(c => c.type.includes('VIDEO')).length;
     const imageCount = creations.filter(c => c.type === 'IMAGE').length;
+    const credits = userProfile?.credits || 0;
     
     return (
         <div className="max-w-7xl mx-auto pb-12 animate-fade-in space-y-8">
@@ -117,7 +119,7 @@ const Dashboard: React.FC = () => {
                 <StatCard label="Total Assets" value={creations.length} trend="+12% this week" icon={GlobeAltIcon} />
                 <StatCard label="Video Gen" value={videoCount} icon={VideoCameraIcon} />
                 <StatCard label="Images Created" value={imageCount} icon={PhotoIcon} />
-                <StatCard label="Credits" value="850" trend="/ 1000" icon={CpuChipIcon} />
+                <StatCard label="Available Credits" value={credits} icon={CpuChipIcon} highlight />
             </div>
 
             {/* Main Workspace */}
